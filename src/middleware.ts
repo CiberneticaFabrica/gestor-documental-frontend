@@ -13,8 +13,10 @@ const protectedRoutes = {
 
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                    request.nextUrl.pathname.startsWith('/reset-password');
+  console.log('Token:', token); // Debug log
+
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth/login') || 
+                    request.nextUrl.pathname.startsWith('/auth/reset-password');
 
   // Permitir acceso a la página de unauthorized sin token
   if (request.nextUrl.pathname === '/unauthorized') {
@@ -31,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   // Si no hay token y no es una página de autenticación, redirigir al login
   if (!token) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -41,7 +43,7 @@ export async function middleware(request: NextRequest) {
   const now = Math.floor(Date.now() / 1000);
   
   if (tokenExp < now) {
-    const url = new URL('/login', request.url);
+    const url = new URL('/auth/login', request.url);
     url.searchParams.set('callbackUrl', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
@@ -51,10 +53,14 @@ export async function middleware(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith(route)) {
       // Asegurarse de que token.permissions existe y es un array
       const userPermissions = Array.isArray(token.permissions) ? token.permissions : [];
+      console.log('Route:', route); // Debug log
+      console.log('Required permissions:', requiredPermissions); // Debug log
+      console.log('User permissions:', userPermissions); // Debug log
       
       const hasPermission = requiredPermissions.some(permission =>
         userPermissions.includes(permission)
       );
+      console.log('Has permission:', hasPermission); // Debug log
 
       if (!hasPermission) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
@@ -69,8 +75,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/login',
-    '/reset-password',
+    '/auth/login',
+    '/auth/reset-password',
     '/unauthorized',
   ],
 }; 

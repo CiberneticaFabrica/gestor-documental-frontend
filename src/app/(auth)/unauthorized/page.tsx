@@ -1,3 +1,5 @@
+'use client';
+
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,13 +24,13 @@ export default function UnauthorizedPage() {
         <div className="mt-8 space-y-4">
           <Link
             href="/dashboard"
-            className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="block w-full text-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             Volver al Dashboard
           </Link>
           <Link
             href="/login"
-            className="flex w-full justify-center rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+            className="block w-full text-center rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700"
           >
             Volver al Login
           </Link>

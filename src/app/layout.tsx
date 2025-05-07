@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 };
 
 // Inicializar MSW solo en desarrollo
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  import('@/mocks/browser');
-}
+ 
 
 export default function RootLayout({
   children,
@@ -43,3 +41,4 @@ export default function RootLayout({
     </html>
   );
 }
+

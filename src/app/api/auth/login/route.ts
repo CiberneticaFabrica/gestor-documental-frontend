@@ -5,24 +5,34 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { username, password } = body;
 
-    // Aquí iría la lógica de autenticación real
-    // Por ahora, simulamos una autenticación exitosa
+    // Simulación de autenticación exitosa
     if (username === 'testuser' && password === 'password123') {
       return NextResponse.json({
-        user: {
-          id: '1',
-          name: 'Usuario Test',
-          email: 'test@example.com',
-          roles: ['user'],
-          permissions: ['read:documents'],
-        },
+        userId: '1',
+        name: 'Test User',
+        email: 'test@example.com',
+        roles: ['user'],
+        permissions: [
+          'view:dashboard',
+          'read:documents',
+          'view:documents',
+          'create:documents',
+          'view:clients'
+        ],
         accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
+        refreshToken: 'mock-refresh-token'
       });
     }
 
-    return new NextResponse(null, { status: 401 });
-  } catch {
-    return new NextResponse(null, { status: 500 });
+    return NextResponse.json(
+      { error: 'Invalid credentials' },
+      { status: 401 }
+    );
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

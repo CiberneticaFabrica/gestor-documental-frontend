@@ -27,6 +27,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           const user = await response.json();
+          console.log('User from API:', user);
 
           if (user) {
             return {
@@ -50,34 +51,34 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT Callback - Token:', token);
+      console.log('JWT Callback - User:', user);
+
       if (user) {
-        return {
-          ...token,
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          roles: user.roles,
-          permissions: user.permissions,
-          accessToken: user.accessToken,
-          refreshToken: user.refreshToken,
-        };
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.roles = user.roles;
+        token.permissions = user.permissions;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
       }
       return token;
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          name: token.name,
-          email: token.email,
-          roles: token.roles,
-          permissions: token.permissions,
-        },
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-      };
+      console.log('Session Callback - Token:', token);
+      console.log('Session Callback - Session:', session);
+
+      if (token) {
+        session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.roles = token.roles;
+        session.user.permissions = token.permissions;
+        session.accessToken = token.accessToken;
+        session.refreshToken = token.refreshToken;
+      }
+      return session;
     },
   },
   pages: {

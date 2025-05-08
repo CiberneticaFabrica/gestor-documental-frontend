@@ -1,9 +1,8 @@
-import tailwindForms from '@tailwindcss/forms';
-import tailwindTypography from '@tailwindcss/typography';
-
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: "class",
+import animate from "tailwindcss-animate";
+
+export default {
+  darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -53,35 +52,6 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        bgmain: '#2F3240',
-        bgsecondary: '#4D4F59',
-        primary: '#2291F2',
-        accent: '#6093BF',
-        primarylight: '#1DA1F2',
-        inputbg: '#4D4F59',
-        inputborder: '#2291F2',
-        placeholder: '#b0b3c6',
-        bank: {
-          primary: '#004D99',
-          secondary: '#0076CC',
-          accent: '#00A3FF',
-          success: '#00875A',
-          warning: '#FFB020',
-          error: '#F04438',
-          info: '#0091D5',
-          gray: {
-            50: '#F9FAFB',
-            100: '#F3F4F6',
-            200: '#E5E7EB',
-            300: '#D1D5DB',
-            400: '#9CA3AF',
-            500: '#6B7280',
-            600: '#4B5563',
-            700: '#374151',
-            800: '#1F2937',
-            900: '#111827',
-          }
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -104,6 +74,5 @@ module.exports = {
       },
     },
   },
-  plugins: [ tailwindForms,
-    tailwindTypography,],
+  plugins: [animate],
 }

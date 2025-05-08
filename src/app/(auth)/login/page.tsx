@@ -1,25 +1,50 @@
-import { Metadata } from 'next';
+"use client";
+
 import LoginForm from '@/components/auth/login-form';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/auth-options';
-import { redirect } from 'next/navigation';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export const metadata: Metadata = {
-  title: 'Iniciar Sesión | Gestor Documental',
-  description: 'Accede al sistema de gestión documental bancario',
-};
+export default function LoginPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
-export default async function LoginPage() {
-  const session = await getServerSession(authOptions);
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
 
-  // Si el usuario ya está autenticado, redirigir al dashboard
-  if (session) {
-    redirect('/dashboard');
+  const handleLogin = async (data: { email: string; password: string }) => {
+    try {
+      const result = await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error en login:', error);
+      throw error;
+    }
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-gray-800">
+        <div className="text-white">Cargando...</div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-gray-800">
-      <LoginForm />
+      <LoginForm onSubmit={handleLogin} />
     </div>
   );
 }

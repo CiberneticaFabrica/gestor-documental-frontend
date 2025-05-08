@@ -8,10 +8,16 @@ interface FolderFormModalProps {
   parentFolder?: Folder;
 }
 
+interface FolderFormData {
+  name: string;
+  description: string;
+  visible: boolean;
+}
+
 export function FolderFormModal({ onClose, folder, parentFolder }: FolderFormModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FolderFormData>({
     name: folder?.name || '',
-    description: folder?.metadata?.description || '',
+    description: (folder?.metadata?.description || '') as string,
     visible: folder?.visible ?? true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,10 +85,10 @@ export function FolderFormModal({ onClose, folder, parentFolder }: FolderFormMod
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               className={`w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.name ? 'border border-red-500' : ''
+                !!errors.name ? 'border border-red-500' : ''
               }`}
               placeholder="Ingrese el nombre de la carpeta"
-              aria-invalid={errors.name ? "true" : "false"}
+              aria-invalid="false"
               aria-describedby={errors.name ? 'name-error' : undefined}
             />
             {errors.name && (
@@ -101,11 +107,11 @@ export function FolderFormModal({ onClose, folder, parentFolder }: FolderFormMod
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className={`w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.description ? 'border border-red-500' : ''
+                !!errors.description ? 'border border-red-500' : ''
               }`}
               placeholder="Ingrese una descripción (opcional)"
               rows={3}
-              aria-invalid={errors.description ? "true" : "false"}
+              aria-invalid="false"
               aria-describedby={errors.description ? 'description-error' : undefined}
             />
             {errors.description && (

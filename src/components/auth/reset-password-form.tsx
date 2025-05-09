@@ -28,11 +28,11 @@ export function ResetPasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  const onSubmit = async (data: ResetPasswordFormValues) => {
+  const onSubmit = async () => {
     setIsLoading(true);
 
     try {
-      await requestPasswordReset(data.email);
+      await requestPasswordReset();
       setIsSubmitted(true);
       toast.success('Se ha enviado un correo con las instrucciones para restablecer tu contraseña');
     } catch (error) {
@@ -152,7 +152,7 @@ export function ResetPasswordForm() {
             <p className="text-sm text-gray-500">
               ¿Recordaste tu contraseña?{' '}
               <Link
-                href="/auth/login"
+                href="/login"
                 className="text-blue-500 hover:text-blue-400 transition-colors"
               >
                 Volver al inicio de sesión

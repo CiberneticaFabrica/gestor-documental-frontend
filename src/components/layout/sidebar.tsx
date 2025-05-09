@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -6,355 +7,186 @@ import {
   FileText,
   Users,
   Settings,
-  Upload,
-  ClipboardList,
-  XCircle,
-  History,
   X,
   ChevronLeft,
   ChevronRight,
+  FolderArchive,
+  BarChart3,
+  Shield,
 } from 'lucide-react';
-import { useState } from 'react';
- 
+import { useAuth } from '@/lib/auth/auth-context';
+import { cn } from '@/lib/utils';
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Documentos', href: '/documents', icon: FileText },
+  { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Usuarios', href: '/users', icon: Users },
-  { name: 'Administración', href: '/admin', icon: Settings },
+  { name: 'Reportes', href: '/reports', icon: BarChart3 },
+  { name: 'Administración', href: '/admin', icon: Shield },
+  { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
-const documentSubmenu = [
-  { name: 'Explorador de documentos', href: '/documents/explorador', icon: FileText },
-  { name: 'Carga de documentos', href: '/documents/carga', icon: Upload },
-  { name: 'Documentos por verificar', href: '/documents/por-verificar', icon: ClipboardList },
-  { name: 'Documentos rechazados', href: '/documents/rechazados', icon: XCircle },
-  { name: 'Historial de procesamiento', href: '/documents/historial', icon: History },
-];
-
-const adminSubmenu = [
-  { name: 'Gestión de Usuarios', href: '/admin/usuarios', icon: Users },
-  { name: 'Gestión de Roles', href: '/admin/roles', icon: Settings },
-  { name: 'Gestión de Carpetas', href: '/admin/carpetas', icon: FileText },
-];
-
-export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }: {
+interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   minimized: boolean;
-  setMinimized: (min: boolean) => void;
-}) {
-  const [docMenuOpen, setDocMenuOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  setMinimized: (minimized: boolean) => void;
+}
+
+export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const isDocSubActive = documentSubmenu.some((item) => pathname.startsWith(item.href));
-  const isAdminSubActive = adminSubmenu.some((item) => pathname.startsWith(item.href));
+  // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node) && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
 
-  // Glassmorphism classes
-  const glass = "bg-white/90 dark:bg-gray-800/60 backdrop-blur-md border border-gray-200 dark:border-gray-700/40 shadow-xl";
-  const sidebarWidth = minimized ? 'w-20' : 'w-64';
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [sidebarOpen, setSidebarOpen]);
 
   return (
     <>
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-900/80" onClick={() => setSidebarOpen(false)} />
-        <div className={`fixed inset-y-0 left-0 ${sidebarWidth} ${glass} rounded-r-2xl transition-all duration-200`}>
-          <div className="flex h-16 items-center justify-between px-4">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-2 rounded-full">
-                <LayoutDashboard className="h-5 w-5 text-white" />
-              </div>
-              {!minimized && <span className="text-xl font-semibold text-white">Gestor Doc</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMinimized(!minimized)}
-                className="text-gray-400 hover:text-white"
-                aria-label={minimized ? 'Expandir sidebar' : 'Minimizar sidebar'}
-              >
-                {minimized ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6" />}
-              </button>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="text-gray-400 hover:text-white"
-                aria-label="Cerrar menú"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-          <nav className="mt-5 px-2">
-            {navigation.map((item) => {
-              if (item.name === 'Documentos') {
-                return (
-                  <div
-                    key={item.name}
-                    className="relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setDocMenuOpen((v) => !v)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isDocSubActive
-                          ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                      }`}
-                    >
-                      <item.icon
-                        className={`mr-3 h-5 w-5 ${
-                          isDocSubActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                        }`}
-                      />
-                      {!minimized && item.name}
-                      <svg className={`ml-auto h-4 w-4 transition-transform ${docMenuOpen ? 'rotate-90' : ''} ${minimized ? 'hidden' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    {/* Submenu */}
-                    {docMenuOpen && !minimized && (
-                      <div
-                        className={`pl-8 mt-1 space-y-1 rounded-md`}
-                      >
-                        {documentSubmenu.map((sub) => {
-                          const isActive = pathname === sub.href;
-                          return (
-                            <Link
-                              key={sub.name}
-                              href={sub.href}
-                              className={`flex items-center px-2 py-2 text-sm rounded-md transition-colors ${
-                                isActive
-                                  ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 font-semibold'
-                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-300'
-                              }`}
-                            >
-                              <sub.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'}`} />
-                              {sub.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              if (item.name === 'Administración') {
-                return (
-                  <div
-                    key={item.name}
-                    className="relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setAdminMenuOpen((v) => !v)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isAdminSubActive
-                          ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                      }`}
-                    >
-                      <item.icon
-                        className={`mr-3 h-5 w-5 ${
-                          isAdminSubActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                        }`}
-                      />
-                      {!minimized && item.name}
-                      <svg className={`ml-auto h-4 w-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''} ${minimized ? 'hidden' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    {/* Submenu */}
-                    {adminMenuOpen && !minimized && (
-                      <div className={`pl-8 mt-1 space-y-1 rounded-md`}>
-                        {adminSubmenu.map((sub) => {
-                          const isActive = pathname === sub.href;
-                          return (
-                            <Link
-                              key={sub.name}
-                              href={sub.href}
-                              className={`flex items-center px-2 py-2 text-sm rounded-md transition-colors ${
-                                isActive
-                                  ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 font-semibold'
-                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-300'
-                              }`}
-                            >
-                              <sub.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'}`} />
-                              {sub.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              // Resto de items
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive
-                        ? 'text-blue-600 dark:text-blue-500'
-                        : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                    }`}
-                  />
-                  {!minimized && item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
+      {/* Overlay para móvil */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Desktop sidebar */}
-      <div className={`hidden lg:fixed lg:inset-y-0 lg:flex   lg:flex-col ${glass} rounded-r-2xl transition-all duration-200 ${minimized ? 'w-20' : 'w-64'}`}>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex h-16 items-center px-4 justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-2 rounded-full">
-                <LayoutDashboard className="h-5 w-5 text-white" />
-              </div>
-              {!minimized && <span className="text-xl font-semibold text-white">Gestor Doc</span>}
+      {/* Sidebar */}
+      <div
+        ref={sidebarRef}
+        className={cn(
+          'fixed inset-y-0 left-0 z-30 flex flex-col overflow-y-auto bg-background border-r',
+          'transition-all duration-300 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          minimized ? 'lg:w-20' : 'lg:w-64',
+          'w-64 lg:translate-x-0 lg:z-0'
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-4 border-b">
+          {!minimized && (
+            <div className="flex items-center">
+              <span className="text-xl font-semibold">Gestor Doc</span>
             </div>
+          )}
+          <div className="flex items-center">
             <button
               onClick={() => setMinimized(!minimized)}
-              className="text-gray-400 hover:text-white"
-              aria-label={minimized ? 'Expandir sidebar' : 'Minimizar sidebar'}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700"
+              aria-label={minimized ? "Expandir sidebar" : "Minimizar sidebar"}
             >
-              {minimized ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6" />}
+              {minimized ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <ChevronLeft className="h-5 w-5" />
+              )}
+            </button>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden ml-1 flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700"
+              aria-label="Cerrar menú"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
-          <nav className="flex-1 space-y-1 px-2 py-4">
+        </div>
+
+        <nav className="mt-5 px-2 flex-1">
+          <div className="space-y-1">
             {navigation.map((item) => {
-              if (item.name === 'Documentos') {
-                return (
-                  <div
-                    key={item.name}
-                    className="relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setDocMenuOpen((v) => !v)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isDocSubActive
-                          ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                      }`}
-                    >
-                      <item.icon
-                        className={`mr-3 h-5 w-5 ${
-                          isDocSubActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                        }`}
-                      />
-                      {!minimized && item.name}
-                      <svg className={`ml-auto h-4 w-4 transition-transform ${docMenuOpen ? 'rotate-90' : ''} ${minimized ? 'hidden' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    {/* Submenu */}
-                    {docMenuOpen && !minimized && (
-                      <div
-                        className={`pl-8 mt-1 space-y-1 rounded-md`}
-                      >
-                        {documentSubmenu.map((sub) => {
-                          const isActive = pathname === sub.href;
-                          return (
-                            <Link
-                              key={sub.name}
-                              href={sub.href}
-                              className={`flex items-center px-2 py-2 text-sm rounded-md transition-colors ${
-                                isActive
-                                  ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 font-semibold'
-                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-300'
-                              }`}
-                            >
-                              <sub.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'}`} />
-                              {sub.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              if (item.name === 'Administración') {
-                return (
-                  <div
-                    key={item.name}
-                    className="relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setAdminMenuOpen((v) => !v)}
-                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isAdminSubActive
-                          ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                      }`}
-                    >
-                      <item.icon
-                        className={`mr-3 h-5 w-5 ${
-                          isAdminSubActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                        }`}
-                      />
-                      {!minimized && item.name}
-                      <svg className={`ml-auto h-4 w-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''} ${minimized ? 'hidden' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                    {/* Submenu */}
-                    {adminMenuOpen && !minimized && (
-                      <div className={`pl-8 mt-1 space-y-1 rounded-md`}>
-                        {adminSubmenu.map((sub) => {
-                          const isActive = pathname === sub.href;
-                          return (
-                            <Link
-                              key={sub.name}
-                              href={sub.href}
-                              className={`flex items-center px-2 py-2 text-sm rounded-md transition-colors ${
-                                isActive
-                                  ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 font-semibold'
-                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-300'
-                              }`}
-                            >
-                              <sub.icon className={`mr-2 h-4 w-4 ${isActive ? 'text-blue-600 dark:text-blue-500' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'}`} />
-                              {sub.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              // Resto de items
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  className={cn(
+                    'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
                     isActive
-                      ? 'bg-gray-100 dark:bg-gray-900 text-blue-600 dark:text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white'
-                  }`}
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-secondary/50'
+                  )}
                 >
                   <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive
-                        ? 'text-blue-600 dark:text-blue-500'
-                        : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300'
-                    }`}
+                    className={cn(
+                      'h-6 w-6 flex-shrink-0',
+                      minimized ? 'mx-auto' : 'mr-3',
+                      isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                    )}
                   />
-                  {!minimized && item.name}
+                  {!minimized && <span>{item.name}</span>}
                 </Link>
               );
             })}
-          </nav>
-        </div>
+          </div>
+        </nav>
+
+        {!minimized && user && (
+          <div className="p-4 border-t">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                {user?.username?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{user?.username}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
+  );
+}
+
+export function Breadcrumbs() {
+  const pathname = usePathname();
+  
+  // Función para convertir la ruta a un formato legible
+  const getReadablePath = (path: string) => {
+    if (path === '/dashboard') return 'Dashboard';
+    return path.split('/').map(segment => {
+      if (!segment) return '';
+      return segment.charAt(0).toUpperCase() + segment.slice(1);
+    }).filter(Boolean);
+  };
+  
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const readablePath = getReadablePath(pathname);
+  
+  return (
+    <nav className="flex items-center" aria-label="Breadcrumb">
+      <ol className="flex items-center space-x-2">
+        <li>
+          <Link href="/dashboard" className="text-sm font-medium text-primary flex items-center">
+            <LayoutDashboard className="mr-1 h-4 w-4" />
+            <span>Inicio</span>
+          </Link>
+        </li>
+        {Array.isArray(readablePath) ? (
+          readablePath.map((segment, index) => (
+            <li key={index} className="flex items-center">
+              <span className="mx-2 text-muted-foreground">/</span>
+              <span className="text-sm font-medium text-foreground">{segment}</span>
+            </li>
+          ))
+        ) : (
+          pathname !== '/dashboard' && (
+            <li className="flex items-center">
+              <span className="mx-2 text-muted-foreground">/</span>
+              <span className="text-sm font-medium text-foreground">{readablePath}</span>
+            </li>
+          )
+        )}
+      </ol>
+    </nav>
   );
 }

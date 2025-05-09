@@ -1,7 +1,7 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { Breadcrumbs } from './sidebar'; // Importación corregida
 import { Sidebar } from './sidebar';
 import { Menu, Bell, LogOut, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -13,18 +13,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
 
-  return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark theme-transition">
-      {/* Sidebar (mobile y desktop) */}
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} minimized={minimized} setMinimized={setMinimized} />
+  // Cierra el sidebar cuando se redimensiona la pantalla a un tamaño más grande
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) { // 1024px corresponde a 'lg' en Tailwind
+        setSidebarOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-      {/* Main content */}
-      <div className={minimized ? "lg:pl-20" : "lg:pl-64"}>
-        <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white dark:bg-neutral-800 shadow theme-transition">
+  // Calcula el padding-left según el estado minimizado
+  const mainPadding = minimized ? 'lg:pl-20' : 'lg:pl-64';
+
+  return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Sidebar (mobile y desktop) */}
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        minimized={minimized}
+        setMinimized={setMinimized}
+      />
+
+      {/* Main content - Ahora con flex-1 para ocupar todo el espacio disponible */}
+      <div className={`flex-1 flex flex-col ${mainPadding} transition-all duration-300 ease-in-out overflow-hidden`}>
+        <header className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-background border-b">
           <button
             type="button"
             title="Abrir menú"
-            className="px-4 text-neutral-500 dark:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white lg:hidden"
+            className="px-4 text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -36,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="ml-4 flex items-center md:ml-6 gap-2">
               <button
                 type="button"
-                className="rounded-full bg-neutral-100 dark:bg-neutral-800 p-1 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-white theme-transition"
+                className="rounded-full bg-secondary p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label="Cambiar tema"
               >
@@ -49,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 title="Notificaciones"
-                className="rounded-full bg-neutral-100 dark:bg-neutral-800 p-1 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-white theme-transition"
+                className="rounded-full bg-secondary p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <Bell className="h-6 w-6" />
               </button>
@@ -58,21 +78,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   type="button"
                   title="Cerrar sesión"
                   onClick={logout}
-                  className="flex items-center rounded-full bg-neutral-100 dark:bg-neutral-800 p-1 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-white theme-transition"
+                  className="flex items-center rounded-full bg-secondary p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <LogOut className="h-6 w-6" />
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Área de contenido principal - Con overflow-auto para permitir scroll y w-full para ancho completo */}
+        <main className="flex-1 overflow-auto w-full">
+          <div className="p-4 md:p-6 w-full">
             {children}
           </div>
         </main>
       </div>
     </div>
   );
-} 
+}

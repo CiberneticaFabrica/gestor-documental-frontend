@@ -1,168 +1,95 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { createContext, useContext, useEffect, useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { User } from 'next-auth';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  roles: string[];
+  permissions: string[];
+}
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
+  isAuthenticated: boolean; 
   login: (username: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
-  setup2FA: () => Promise<void>;
-  verify2FA: (code: string) => Promise<void>;
-  hasPermission: (permission: string) => boolean;
-  hasRole: (role: string) => boolean;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status, update } = useSession();
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (session?.user) {
-      setUser(session.user as User);
-    } else {
-      setUser(null);
+    // Verificar el token al cargar
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
-  }, [session]);
+    
+    setIsLoading(false);
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      // Actualizar la sesión después del login exitoso
-      await update();
-      toast.success('Inicio de sesión exitoso');
-    } catch (error) {
-      console.error('Error en login:', error);
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut({ redirect: false });
-      setUser(null);
-      router.push('/login');
-      toast.success('Sesión cerrada exitosamente');
-    } catch (error) {
-      console.error('Error en logout:', error);
-      toast.error('Error al cerrar sesión');
-    }
-  };
-
-  const refreshToken = async () => {
-    try {
-      const response = await fetch('/api/auth/refresh-token', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          refreshToken: session?.refreshToken,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {
-        throw new Error('Error al refrescar el token');
+        throw new Error('Credenciales inválidas');
       }
 
       const data = await response.json();
-      await update({
-        ...session,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
+      
+      // Guardar en localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Actualizar estado
+      setUser(data.user);
+      setToken(data.token);
+      
+      // Redirigir al dashboard
+      router.push('/dashboard');
     } catch (error) {
-      console.error('Error al refrescar token:', error);
-      // Si falla el refresh, forzar logout
-      await logout();
+      throw new Error('Error al iniciar sesión');
     }
   };
 
-  const setup2FA = async () => {
-    try {
-      const response = await fetch('/api/auth/setup-2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al configurar 2FA');
-      }
-
-      const data = await response.json();
-      router.push(`/setup-2fa?secret=${data.secret}`);
-    } catch (error) {
-      console.error('Error al configurar 2FA:', error);
-      toast.error('Error al configurar la autenticación de dos factores');
-    }
+  const logout = () => {
+    // Limpiar localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Limpiar estado
+    setUser(null);
+    setToken(null);
+    
+    // Redirigir al login
+    router.push('/login');
   };
 
-  const verify2FA = async (code: string) => {
-    try {
-      const response = await fetch('/api/auth/verify-2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify({ code }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Código 2FA inválido');
-      }
-
-      await update();
-      toast.success('Autenticación de dos factores configurada exitosamente');
-    } catch (error) {
-      console.error('Error al verificar 2FA:', error);
-      throw error;
-    }
-  };
-
-  const hasPermission = (permission: string): boolean => {
-    return user?.permissions.includes(permission) || false;
-  };
-
-  const hasRole = (role: string): boolean => {
-    return user?.roles.includes(role) || false;
-  };
-
-  const value = {
-    user,
-    isLoading: status === 'loading',
-    isAuthenticated: status === 'authenticated',
-    login,
-    logout,
-    refreshToken,
-    setup2FA,
-    verify2FA,
-    hasPermission,
-    hasRole,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

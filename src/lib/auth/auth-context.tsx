@@ -1,92 +1,97 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'; 
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  roles: string[];
-  permissions: string[];
-}
+import { authService } from '@/lib/api/services';
+import type { User, LoginCredentials } from '@/lib/api/services/auth.service';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
-  isAuthenticated: boolean; 
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  isAuthenticated: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar el token al cargar
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    
-    setIsLoading(false);
+    loadUserProfile();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const loadUserProfile = async () => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Credenciales inválidas');
-      }
-
-      const data = await response.json();
-      
-      // Guardar en localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Actualizar estado
-      setUser(data.user);
-      setToken(data.token);
-      
-      // Redirigir al dashboard
-      router.push('/dashboard');
+      const profile = await authService.getProfile();
+      setUser(profile);
     } catch (error) {
-      throw new Error('Error al iniciar sesión');
+      console.error('Error loading user profile:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    // Limpiar localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    
-    // Limpiar estado
-    setUser(null);
-    setToken(null);
-    
-    // Redirigir al login
-    router.push('/login');
+  const login = async (credentials: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      const response = await authService.login(credentials);
+      setUser(response.user);
+      toast.success('Inicio de sesión exitoso');
+      router.push('/dashboard');
+    } catch (error) {
+      toast.error('Error al iniciar sesión');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      await authService.logout();
+      setUser(null);
+      toast.success('Sesión cerrada exitosamente');
+      router.push('/auth/login');
+    } catch (error) {
+      toast.error('Error al cerrar sesión');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateUser = async (userData: Partial<User>) => {
+    try {
+      setIsLoading(true);
+      const updatedUser = await authService.updateProfile(userData);
+      setUser(updatedUser);
+      toast.success('Perfil actualizado exitosamente');
+    } catch (error) {
+      toast.error('Error al actualizar el perfil');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -4,7 +4,7 @@ import { FolderTreeExplorer } from './FolderTreeExplorer';
 import { FolderFormModal } from './FolderFormModal';
 import { FolderPermissionsPanel } from './FolderPermissionsPanel';
 import { FolderAllowedTypesPanel } from './FolderAllowedTypesPanel';
-import { GroupManagementPanel } from './GroupManagementPanel';
+//import { GroupManagementPanel } from './GroupManagementPanel';
 
 export interface Folder {
   id: string;
@@ -43,10 +43,10 @@ export default function FoldersAdminPage() {
           <h1 className="text-2xl font-bold text-white">Gestión de Carpetas</h1>
           <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onClick={() => setShowForm(true)}>Nueva carpeta</button>
         </div>
-        {showForm && <FolderFormModal onClose={() => setShowForm(false)} />}
+        {showForm && <FolderFormModal onClose={() => setShowForm(true)} />}
         {selectedFolder && <FolderPermissionsPanel folder={selectedFolder} />}
         {selectedFolder && <FolderAllowedTypesPanel folder={selectedFolder} />}
-        <GroupManagementPanel />
+        {/*<GroupManagementPanel />*/}
       </main>
     </div>
   );

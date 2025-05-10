@@ -33,7 +33,8 @@ const mockGroups: Group[] = [
   }
 ];
 
-export function GroupManagementPanel() {
+/*
+-export function GroupManagementPanel() {
   const [showForm, setShowForm] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -117,7 +118,7 @@ export function GroupManagementPanel() {
             </div>
           </div>
         ))}
-      </div>
+      </div> 
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -134,7 +135,7 @@ export function GroupManagementPanel() {
                 </svg>
               </button>
             </div>
-            {/* TODO: Implement group form */}
+            
             <p className="text-gray-300">Formulario de grupo en desarrollo...</p>
           </div>
         </div>
@@ -142,3 +143,4 @@ export function GroupManagementPanel() {
     </div>
   );
 } 
+  */

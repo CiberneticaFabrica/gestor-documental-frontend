@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -23,8 +23,13 @@ const navigation = [
   { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Usuarios', href: '/users', icon: Users },
   { name: 'Reportes', href: '/reports', icon: BarChart3 },
-  { name: 'Administración', href: '/admin', icon: Shield },
   { name: 'Configuración', href: '/settings', icon: Settings },
+];
+
+const adminSubmenu = [
+  { name: 'Usuarios', href: '/admin/users', icon: Users },
+  { name: 'Carpetas', href: '/admin/folders', icon: FolderArchive },
+  { name: 'Roles', href: '/admin/roles', icon: Shield },
 ];
 
 interface SidebarProps {
@@ -38,6 +43,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const pathname = usePathname();
   const { user } = useAuth();
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
   useEffect(() => {
@@ -126,6 +132,50 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                 </Link>
               );
             })}
+
+            {/* Submenú de Administración */}
+            <div>
+              <button
+                type="button"
+                className={cn(
+                  'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
+                  pathname.startsWith('/admin') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50'
+                )}
+                onClick={() => setAdminOpen((open) => !open)}
+                aria-expanded={!!adminOpen}
+              >
+                <Shield className={cn('h-6 w-6 flex-shrink-0', minimized ? 'mx-auto' : 'mr-3', pathname.startsWith('/admin') ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                {!minimized && <span>Administración</span>}
+                {!minimized && (
+                  <ChevronRight
+                    className={cn('ml-auto h-4 w-4 transition-transform', adminOpen ? 'rotate-90' : '')}
+                  />
+                )}
+              </button>
+              {/* Submenú desplegable */}
+              {adminOpen && !minimized && (
+                <div className="ml-8 mt-1 space-y-1">
+                  {adminSubmenu.map((sub) => {
+                    const isSubActive = pathname === sub.href;
+                    return (
+                      <Link
+                        key={sub.name}
+                        href={sub.href}
+                        className={cn(
+                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
+                          isSubActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-secondary/50'
+                        )}
+                      >
+                        <sub.icon className={cn('h-5 w-5 mr-2', isSubActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                        <span>{sub.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </nav>
 

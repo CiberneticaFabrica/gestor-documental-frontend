@@ -173,7 +173,7 @@ export default function LoginForm() {
                 </label>
               </div>
               <div className="text-sm text-right mt-2 sm:mt-0">
-                <Link href="/auth/forgot-password" className="font-medium text-blue-600 hover:underline">
+                <Link href="/forgot-password" className="font-medium text-blue-600 hover:underline">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>

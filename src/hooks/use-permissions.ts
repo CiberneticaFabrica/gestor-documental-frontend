@@ -29,6 +29,6 @@ export function usePermissions() {
     checkRoles,
     checkAnyRole,
     userPermissions: user?.permissions || [],
-    userRoles: user?.roles || [],
+    userRoles: user?.roles ? [user.roles] : [],
   };
-} 
+}

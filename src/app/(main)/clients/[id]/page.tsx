@@ -1,6 +1,6 @@
 'use client';
 
-import { User360View } from '@/components/users/user-360-view';
+import { User360View } from '@/components/clients/user-360-view';
  
 export default function UserProfilePage() {
    

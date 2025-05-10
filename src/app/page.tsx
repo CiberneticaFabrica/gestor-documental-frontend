@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from "@/lib/auth/auth-context";
+import LoginForm from '@/components/auth/login-form';
 
 export default function Home() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -37,23 +38,14 @@ export default function Home() {
             <h2 className="text-lg font-semibold mb-2">Roles</h2>
             <div className="flex flex-wrap gap-2">
               {user?.roles.map((role) => (
-                <span key={role} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                  {role}
+                <span key={role.id_rol} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  {role.nombre_rol}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h2 className="text-lg font-semibold mb-2">Permisos</h2>
-            <div className="flex flex-wrap gap-2">
-              {user?.permissions.map((permission) => (
-                <span key={permission} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                  {permission}
-                </span>
-              ))}
-            </div>
-          </div>
+      
         </div>
       </div>
     </div>

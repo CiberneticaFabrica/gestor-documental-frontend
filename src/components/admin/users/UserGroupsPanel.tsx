@@ -1,7 +1,7 @@
 export function UserGroupsPanel() {
   return (
     <div className="bg-gray-800 rounded-lg p-4 mt-4">
-      <h3 className="text-white font-semibold mb-2">Gestión de Grupos</h3>
+      <h3 className="text-gray-500 dark:text-gray-300 uppercase font-semibold mb-2">Gestión de Grupos</h3>
       <div className="flex flex-wrap gap-2 mb-2">
         <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">Oficina Central</span>
         <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">Sucursal Norte</span>

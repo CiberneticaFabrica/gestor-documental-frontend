@@ -13,11 +13,12 @@ export function UserDetailDrawer({ user, onClose }: { user: User; onClose: () =>
         </button>
         <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Detalle de Usuario</h2>
         <div className="mb-4">
-          <div className="font-semibold text-blue-700 dark:text-blue-300">{user.name}</div>
+          <div className="font-semibold text-blue-700 dark:text-blue-300">{user.nombre} {user.apellidos}</div>
           <div className="text-xs text-gray-500">{user.email}</div>
-          <div className="text-xs text-gray-500">Rol: {user.role}</div>
-          <div className="text-xs text-gray-500">Grupo: {user.group}</div>
-          <div className="text-xs text-gray-500">Estado: {user.status}</div>
+          <div className="text-xs text-gray-500">Usuario: {user.nombre_usuario}</div>
+          <div className="text-xs text-gray-500">Roles: {user.roles.map(role => role.nombre_rol).join(', ')}</div>
+          <div className="text-xs text-gray-500">Estado: {user.estado}</div>
+          <div className="text-xs text-gray-500">Último acceso: {user.ultimo_acceso ? new Date(user.ultimo_acceso).toLocaleString() : 'Nunca'}</div>
         </div>
         <div className="mb-4">
           <h3 className="font-semibold mb-1">Actividad reciente</h3>
@@ -37,11 +38,7 @@ export function UserDetailDrawer({ user, onClose }: { user: User; onClose: () =>
         </div>
         <div className="mb-4">
           <h3 className="font-semibold mb-1">Roles</h3>
-          <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{user.role}</span>
-        </div>
-        <div className="mb-4">
-          <h3 className="font-semibold mb-1">Grupos</h3>
-          <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">{user.group}</span>
+          <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">{user.roles.map(role => role.nombre_rol).join(', ')}</span>
         </div>
       </div>
     </div>

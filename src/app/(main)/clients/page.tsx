@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/auth-context';
-
+ 
 export default function UsersPage() {
   const { user } = useAuth();
 
@@ -18,7 +18,7 @@ export default function UsersPage() {
         {/* Aquí irá la lista de usuarios */}
         <div className="rounded-lg border p-4">
           <p className="text-center text-muted-foreground">
-            No hay usuarios disponibles
+          
           </p>
         </div>
       </div>

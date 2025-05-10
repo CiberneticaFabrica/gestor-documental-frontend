@@ -45,8 +45,8 @@ export function ResetPasswordForm() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="max-w-md w-full space-y-8 bg-gray-850 p-8 rounded-lg shadow-lg relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center p-4  bg-white ">
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg relative overflow-hidden">
           {/* Background curve effect */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl z-0"></div>
           
@@ -75,7 +75,7 @@ export function ResetPasswordForm() {
             </p>
             <div className="mt-6">
               <Link
-                href="/auth/login"
+                href="/login"
                 className="text-blue-500 hover:text-blue-400 transition-colors"
               >
                 Volver al inicio de sesión

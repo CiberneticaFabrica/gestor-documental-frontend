@@ -3,7 +3,7 @@ export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh-token',
-  PROFILE: '/auth/profile',
+  PROFILE: '/auth/validate',
   CHANGE_PASSWORD: '/auth/change-password',
   SETUP_2FA: '/auth/setup-2fa',
   VERIFY_2FA: '/auth/verify-2fa',

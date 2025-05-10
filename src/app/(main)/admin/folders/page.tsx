@@ -1,4 +1,5 @@
 import FoldersAdminPage from '@/components/admin/folders/FoldersAdminPage';
-export default function Page() {
+
+export default function AdminFoldersPage() {
   return <FoldersAdminPage />;
 } 

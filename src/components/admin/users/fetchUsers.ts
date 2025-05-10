@@ -14,7 +14,7 @@ export async function fetchUsers(): Promise<User[]> {
   return res.data.users;
 }
 
-export interface User {
+export interface UserResponse {
   id_usuario: string;
   nombre_usuario: string;
   nombre: string;

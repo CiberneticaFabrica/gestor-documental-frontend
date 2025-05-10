@@ -13,7 +13,7 @@ export const API_ENDPOINTS = {
     login: '/auth/login',
     logout: '/auth/logout',
     refreshToken: '/auth/refresh-token',
-    profile: '/auth/profile',
+    profile: '/auth/validate',
     changePassword: '/auth/change-password',
     setup2FA: '/auth/setup-2fa',
     verify2FA: '/auth/verify-2fa',

@@ -75,7 +75,7 @@ export function ResetPasswordForm() {
             </p>
             <div className="mt-6">
               <Link
-                href="/auth/login"
+                href="/login"
                 className="text-blue-500 hover:text-blue-400 transition-colors"
               >
                 Volver al inicio de sesión

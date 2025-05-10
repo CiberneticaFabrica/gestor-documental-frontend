@@ -13,6 +13,10 @@ import {
   FolderArchive,
   BarChart3,
   Shield,
+  Clock,
+  AlertCircle,
+  Upload,
+  CheckCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
@@ -21,9 +25,17 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Carpetas', href: '/folders', icon: FolderArchive },
-  { name: 'Usuarios', href: '/users', icon: Users },
+  { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Reportes', href: '/reports', icon: BarChart3 },
   { name: 'Configuración', href: '/settings', icon: Settings },
+];
+
+const documentsSubmenu = [
+  { name: 'Explorador', href: '/documents/explorer', icon: FileText },
+  { name: 'Historial', href: '/documents/history', icon: Clock },
+  { name: 'Rechazados', href: '/documents/rejected', icon: AlertCircle },
+  { name: 'Subir', href: '/documents/upload', icon: Upload },
+  { name: 'Verificación', href: '/documents/verification', icon: CheckCircle },
 ];
 
 const adminSubmenu = [
@@ -31,6 +43,8 @@ const adminSubmenu = [
   { name: 'Carpetas', href: '/admin/folders', icon: FolderArchive },
   { name: 'Roles', href: '/admin/roles', icon: Shield },
 ];
+
+ 
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -44,6 +58,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const { user } = useAuth();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
   useEffect(() => {
@@ -110,26 +125,74 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
           <div className="space-y-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
+              const isDocuments = item.name === 'Documentos';
+              
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-secondary/50'
+                <div key={item.name}>
+                  {isDocuments ? (
+                    <>
+                      <button
+                        type="button"
+                        className={cn(
+                          'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
+                          pathname.startsWith('/documents') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50'
+                        )}
+                        onClick={() => setDocumentsOpen((open) => !open)}
+                        aria-expanded={documentsOpen ? "true" : "false"}
+                      >
+                        <item.icon className={cn('h-6 w-6 flex-shrink-0', minimized ? 'mx-auto' : 'mr-3', pathname.startsWith('/documents') ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                        {!minimized && <span>{item.name}</span>}
+                        {!minimized && (
+                          <ChevronRight
+                            className={cn('ml-auto h-4 w-4 transition-transform', documentsOpen ? 'rotate-90' : '')}
+                          />
+                        )}
+                      </button>
+                      {/* Submenú de Documentos */}
+                      {documentsOpen && !minimized && (
+                        <div className="ml-8 mt-1 space-y-1">
+                          {documentsSubmenu.map((sub) => {
+                            const isSubActive = pathname === sub.href;
+                            return (
+                              <Link
+                                key={sub.name}
+                                href={sub.href}
+                                className={cn(
+                                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
+                                  isSubActive
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-foreground hover:bg-secondary/50'
+                                )}
+                              >
+                                <sub.icon className={cn('h-5 w-5 mr-2', isSubActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                                <span>{sub.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground hover:bg-secondary/50'
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-6 w-6 flex-shrink-0',
+                          minimized ? 'mx-auto' : 'mr-3',
+                          isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                        )}
+                      />
+                      {!minimized && <span>{item.name}</span>}
+                    </Link>
                   )}
-                >
-                  <item.icon
-                    className={cn(
-                      'h-6 w-6 flex-shrink-0',
-                      minimized ? 'mx-auto' : 'mr-3',
-                      isActive ? 'text-primary-foreground' : 'text-muted-foreground'
-                    )}
-                  />
-                  {!minimized && <span>{item.name}</span>}
-                </Link>
+                </div>
               );
             })}
 

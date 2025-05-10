@@ -4,7 +4,12 @@ export interface Role {
   id_rol: string;
   nombre_rol: string;
 }
-
+export interface AuthResponse {
+  message: string;
+  session_token: string;
+  expires_at: string;
+  user: User;
+}
 export interface User {
   id: string;
   username: string;
@@ -12,6 +17,7 @@ export interface User {
   apellidos: string;
   email: string;
   roles: Role[];
+  permissions: string[];
 }
 
 export interface LoginCredentials {
@@ -40,10 +46,6 @@ export class AuthService extends BaseService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await this.post<AuthResponse>(this.endpoints.auth.login, credentials);
-      localStorage.setItem('session_token', response.session_token);
-      if (credentials.rememberMe) {
-        localStorage.setItem('expires_at', response.expires_at);
-      }
       return response;
     } catch (error) {
       return this.handleError(error);
@@ -53,16 +55,14 @@ export class AuthService extends BaseService {
   async logout(): Promise<void> {
     try {
       await this.post(this.endpoints.auth.logout);
-      localStorage.removeItem('session_token');
-      localStorage.removeItem('expires_at');
     } catch (error) {
       return this.handleError(error);
     }
   }
 
-  async getProfile(): Promise<User> {
+  async getProfile(): Promise<{ valid: boolean, user: User }> {
     try {
-      return await this.get<User>(this.endpoints.auth.profile);
+      return await this.get<{ valid: boolean, user: User }>(this.endpoints.auth.profile);
     } catch (error) {
       return this.handleError(error);
     }

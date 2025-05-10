@@ -1,5 +1,5 @@
 // src/hooks/useRoles.ts
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchRoles, type Role } from "@/services/common/roleService";
 
 export function useRoles() {
@@ -7,12 +7,22 @@ export function useRoles() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    fetchRoles()
-      .then(setRoles)
-      .catch(setError)
-      .finally(() => setLoading(false));
+  const fetchRolesData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchRoles();
+      setRoles(data);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { roles, loading, error };
+  useEffect(() => {
+    fetchRolesData();
+  }, [fetchRolesData]);
+
+  return { roles, loading, error, refresh: fetchRolesData };
 }

@@ -21,6 +21,7 @@ export class BaseService {
 
   protected async get<T>(url: string, params?: any): Promise<T> {
     try {
+      debugger;
       const response = await axiosInstance.get<T>(url, { params });
       return response.data;
     } catch (error) {
@@ -30,6 +31,7 @@ export class BaseService {
 
   protected async post<T>(url: string, data?: any): Promise<T> {
     try {
+      debugger;
       const response = await axiosInstance.post<T>(url, data, {
         headers: {
           'Content-Type': 'application/json',

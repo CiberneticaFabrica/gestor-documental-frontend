@@ -1,27 +1,24 @@
 'use client';
 
-import { useAuth } from '@/lib/auth/auth-context';
- 
-export default function UsersPage() {
-  const { user } = useAuth();
+import { useState } from 'react';
+import { UserStatsDashboard } from '@/components/clients/user-stats-dashboard';
+import { UserTable } from '@/components/clients/user-table';
+import { User360View } from '@/components/clients/user-360-view';
+
+export default function ClientsPage() {
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Usuarios</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
         <p className="text-muted-foreground">
-          Gestiona los usuarios del sistema
+          Gestiona los clientes del sistema
         </p>
       </div>
-
-      <div className="grid gap-4">
-        {/* Aquí irá la lista de usuarios */}
-        <div className="rounded-lg border p-4">
-          <p className="text-center text-muted-foreground">
-          
-          </p>
-        </div>
-      </div>
+      <UserStatsDashboard />
+      <UserTable />
+     
     </div>
   );
 } 

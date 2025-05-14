@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
-import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import ConnectivityMonitor from "@/components/ui/connectivity-monitor";
+import { Toaster } from 'sonner';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Roboto(
+  {  weight: ['400', '500', '700'],
+    subsets: ["latin"] 
+  });
 
 export const metadata: Metadata = {
   title: "Gestor Documental",
   description: "Sistema de gestión documental",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
  
 export default function RootLayout({
@@ -30,7 +36,7 @@ export default function RootLayout({
           <AuthProvider>
             <ConnectivityMonitor />
             {children}
-            <Toaster /> 
+            <Toaster position="top-right" richColors />
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -8,9 +8,11 @@ import { RolePermissionsPanel } from './RolePermissionsPanel';
 import { useRoles } from '@/hooks/useRoles';
 import { toast } from 'sonner';
 import { Role as APIRole } from '@/services/common/roleService';
+import { RoleFiltersBar } from './RoleFiltersBar';
+import { RoleListCards } from './RoleListCards';
 
 export interface Role extends APIRole {
-  permissions: string[];
+  permissions?: string[];
 }
 
 export default function RolesAdminPage() {
@@ -18,10 +20,29 @@ export default function RolesAdminPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [viewingPermissionsRoleId, setViewingPermissionsRoleId] = useState<string | null>(null);
   const { roles, loading, error, refresh } = useRoles();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // Filtrar roles por búsqueda antes de paginar
+  const filteredRoles = roles.filter(role =>
+    role.nombre_rol.toLowerCase().includes(search.toLowerCase()) ||
+    (role.descripcion?.toLowerCase() || '').includes(search.toLowerCase())
+  );
+
+  const total = filteredRoles.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const paginatedRoles = filteredRoles.slice((page - 1) * pageSize, page * pageSize);
+
+  const handlePageChange = (p: number) => {
+    setPage(p);
+  };
 
   const handleRoleCreated = () => {
     setShowForm(false);
     refresh();
+    setPage(1);
   };
 
   const handleRoleDeleted = () => {
@@ -33,22 +54,45 @@ export default function RolesAdminPage() {
     refresh();
   };
 
+  const handleExport = () => {
+    alert('Funcionalidad de exportar próximamente');
+  };
+
   if (error) {
     toast.error("Error al cargar los roles");
   }
 
   return (
-    <div className="flex flex-col gap-6 min-h-[80vh]">
+    <div className="flex flex-col gap-2 min-h-[80vh]">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Gestión de Roles</h1>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onClick={() => setShowForm(true)}>Nuevo rol</button>
       </div>
+      <RoleFiltersBar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(1); }}
+        onAddRole={() => setShowForm(true)}
+        onExport={handleExport}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
       {loading ? (
         <div className="text-white">Cargando roles...</div>
-      ) : (
+      ) : viewMode === 'table' ? (
         <RoleListTable 
-          roles={roles} 
+          roles={paginatedRoles} 
           onSelect={setSelectedRole} 
+          onDelete={handleRoleDeleted}
+          onViewPermissions={setViewingPermissionsRoleId}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      ) : (
+        <RoleListCards
+          roles={paginatedRoles}
+          onSelect={setSelectedRole}
           onDelete={handleRoleDeleted}
           onViewPermissions={setViewingPermissionsRoleId}
         />
@@ -61,7 +105,7 @@ export default function RolesAdminPage() {
           onClose={() => setViewingPermissionsRoleId(null)} 
         />
       )}
-      <PermissionsByModulePanel />
+      {/* <PermissionsByModulePanel /> */}
     </div>
   );
 } 

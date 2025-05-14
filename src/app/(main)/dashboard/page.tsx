@@ -4,9 +4,22 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { MetricTabs } from '@/components/dashboard/metric-tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Users, FolderArchive, Clock } from 'lucide-react';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      const hasShownWelcome = localStorage.getItem('hasShownWelcome');
+      
+      if (!hasShownWelcome) {
+        toast.success(`¡Bienvenido de nuevo, ${user.username}!`);
+        localStorage.setItem('hasShownWelcome', 'true');
+      }
+    }
+  }, [user]);
 
   return (
     <div className="space-y-6 w-full">

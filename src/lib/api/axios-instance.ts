@@ -99,7 +99,7 @@ axiosInstance.interceptors.response.use(
       try {
         // Intentar refrescar el token
         const refreshToken = localStorage.getItem('refresh_token');
-        debugger;
+        
         if (refreshToken) {
           const response = await axios.post(`${API_CONFIG.baseURL}/auth/refresh`, {
             refresh_token: refreshToken
@@ -114,7 +114,7 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error('Error refreshing token:', refreshError);
-        debugger;
+       
         // Si falla el refresh, redirigir al login
         localStorage.removeItem('session_token');
         localStorage.removeItem('refresh_token');

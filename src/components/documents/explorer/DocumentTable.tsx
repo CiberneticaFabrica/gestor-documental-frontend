@@ -1,52 +1,9 @@
-import { FileText, Eye, Download, Send, Archive, Clock, CheckCircle, AlertCircle, Tag, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Eye, Download, Clock, CheckCircle, AlertCircle, Tag, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 import React from 'react';
-
-type Document = {
-  id: string;
-  thumbnail: string;
-  type: string;
-  typeIcon: string;
-  client: string;
-  uploadDate: string;
-  status: string;
-  confidence: number;
-  expiry: string;
-  processor: string;
-  processingTime: number;
-  versions: number;
-  entities: number;
-  validationStatus: 'pending' | 'completed' | 'rejected';
-  validator: string;
-  qualityScore: number;
-  criticalFields: number;
-  biometricScore?: number;
-  inconsistencies: number;
-  documentType?: string;
-  amount?: number;
-  currency?: string;
-  signers?: number;
-  signingStatus?: 'pending' | 'completed';
-  regulatoryCategory: 'KYC' | 'AML' | 'PBC';
-  criticality: 'high' | 'medium' | 'low';
-  complianceStatus: 'complete' | 'partial' | 'pending';
-  riskLevel: 'high' | 'medium' | 'low';
-  lastViewed: string;
-  downloads: number;
-  lastUpdate: string;
-  comments: number;
-  pendingActions: number;
-  size: number;
-  pages: number;
-  dpi: number;
-  hash: string;
-  format: string;
-  folderPath: string;
-  tags: string[];
-  relatedDocs: number;
-  workflow: string;
-  priority: number;
-};
+import { Document } from '@/services/common/documentService';
+import { toast } from 'sonner';
+import { documentService, DocumentVersion, DocumentVersionsResponse } from '@/lib/api/services/document.service';
 
 interface DocumentTableProps {
   documents: Document[];
@@ -54,189 +11,152 @@ interface DocumentTableProps {
 }
 
 export function DocumentTable({ documents, onSelect }: DocumentTableProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [showVersions, setShowVersions] = useState<boolean>(false);
+  const [versions, setVersions] = useState<DocumentVersion[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
-  const toggleRow = (docId: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(docId)) {
-      newExpanded.delete(docId);
-    } else {
-      newExpanded.add(docId);
+  const handleViewVersions = async (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const data = await documentService.getVersions(docId);
+      setVersions(data.versions);
+      setSelectedDocId(docId);
+      setShowVersions(true);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al cargar las versiones del documento');
     }
-    setExpandedRows(newExpanded);
   };
 
   return (
     <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-      {/* Modal de previsualización */}
-      {previewDoc && (
+      {/* Modal de versiones */}
+      {showVersions && selectedDocId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg w-3/4 h-3/4 flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Previsualización: {previewDoc.type}</h3>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Historial de Versiones
+              </h3>
               <button 
-                onClick={() => setPreviewDoc(null)}
-                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowVersions(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 ×
               </button>
             </div>
             <div className="flex-1 overflow-auto">
-              <img src={previewDoc.thumbnail} alt="preview" className="w-full h-full object-contain" />
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Versión</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Creado por</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Comentario</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {versions.map((version) => (
+                    <tr key={version.id_version}>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">v{version.numero_version}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                        {new Date(version.fecha_creacion).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{version.creado_por_usuario}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{version.comentario_version}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <button 
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                          onClick={() => {
+                            // TODO: Implementar descarga de versión
+                            console.log('Descargar versión:', version.id_version);
+                          }}
+                          title="Descargar versión"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-100 dark:bg-gray-900">
+        <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500"></th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">ID</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Miniatura</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Tipo</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Cliente</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Estado</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Confianza</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-500">Acciones</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Código</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Título</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Tipo</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Carpeta</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Estado</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Versión</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm"></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700 text-sm">
           {documents.map((doc) => (
-            <React.Fragment key={doc.id}>
-              <tr key={doc.id} className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => onSelect(doc)}>
-                <td className="px-4 py-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleRow(doc.id);
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    {expandedRows.has(doc.id) ? 
-                      <ChevronDown className="h-4 w-4" /> : 
-                      <ChevronRight className="h-4 w-4" />
-                    }
-                  </button>
-                </td>
-                <td className="px-4 py-2 text-xs font-mono text-gray-900 dark:text-white">{doc.id}</td>
-                <td className="px-4 py-2">
-                  <img src={doc.thumbnail} alt="thumb" className="h-8 w-8 rounded object-cover" />
-                </td>
-                <td className="px-4 py-2 flex items-center gap-2 text-gray-900 dark:text-white">
-                  <FileText className="h-4 w-4 text-blue-500" />{doc.type}
-                </td>
-                <td className="px-4 py-2 text-xs text-gray-900 dark:text-white">{doc.client}</td>
-                <td className="px-4 py-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                    doc.validationStatus === 'completed' ? 'bg-green-100 text-green-700' :
-                    doc.validationStatus === 'rejected' ? 'bg-red-100 text-red-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {doc.validationStatus === 'completed' ? <CheckCircle className="h-3 w-3 mr-1" /> :
-                     doc.validationStatus === 'rejected' ? <AlertCircle className="h-3 w-3 mr-1" /> :
-                     <Clock className="h-3 w-3 mr-1" />}
-                    {doc.validationStatus}
+            <tr key={doc.id_documento} className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => onSelect(doc)}>
+              <td className="px-4 py-2 text-sm">{doc.codigo_documento}</td>
+              <td className="px-4 py-2 text-sm">{doc.titulo}</td>
+              <td className="px-4 py-2 text-sm">{doc.tipo_documento}</td>
+              <td className="px-4 py-2 text-sm">{doc.nombre_carpeta || '-'}</td>
+              <td className="px-4 py-2 text-sm">
+                {doc.estado ? (
+                  <span className="inline-block rounded-full bg-blue-100 text-blue-700 px-3 py-0.5 text-xs font-semibold">
+                    {doc.estado}
                   </span>
-                </td>
-                <td className="px-4 py-2">
-                  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-2 rounded-full bg-blue-500" style={{ width: `${doc.confidence}%` }} />
-                  </div>
-                </td>
-                <td className="px-4 py-2 flex gap-2">
+                ) : '-'}
+              </td>
+              <td className="px-4 py-2 text-sm">v{doc.version_actual}</td>
+              <td className="px-4 py-2 text-sm">
+                <div className="relative">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      setPreviewDoc(doc);
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const menu = document.createElement('div');
+                      menu.className = 'absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50';
+                      menu.innerHTML = `
+                        <div class="py-1">
+                          ${doc.version_actual > 1 ? `
+                            <button class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                              Ver versiones
+                            </button>
+                          ` : ''}
+                          <button class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Descargar
+                          </button>
+                        </div>
+                      `;
+                      
+                      const handleClick = (e: MouseEvent) => {
+                        const target = e.target as HTMLElement;
+                        if (target.textContent?.includes('Ver versiones')) {
+                          handleViewVersions(doc.id_documento, e as unknown as React.MouseEvent);
+                        } else if (target.textContent?.includes('Descargar')) {
+                          // TODO: Implementar descarga
+                          console.log('Descargar documento:', doc.id_documento);
+                        }
+                        document.removeEventListener('click', handleClick);
+                        menu.remove();
+                      };
+                      
+                      document.addEventListener('click', handleClick);
+                      e.currentTarget.parentElement?.appendChild(menu);
                     }}
-                    className="text-blue-500 hover:text-blue-700" 
-                    title="Previsualizar"
+                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                    title="Acciones"
                   >
-                    <Eye className="h-4 w-4" />
+                    <MoreVertical className="h-4 w-4 text-gray-500" />
                   </button>
-                  <button className="text-blue-500 hover:text-blue-700" title="Ver"><Eye className="h-4 w-4" /></button>
-                  <button className="text-green-500 hover:text-green-700" title="Descargar"><Download className="h-4 w-4" /></button>
-                  <button className="text-yellow-500 hover:text-yellow-700" title="Enviar"><Send className="h-4 w-4" /></button>
-                  <button className="text-gray-500 hover:text-gray-700" title="Archivar"><Archive className="h-4 w-4" /></button>
-                </td>
-              </tr>
-              {expandedRows.has(doc.id) && (
-                <tr className="bg-gray-50 dark:bg-gray-800">
-                  <td colSpan={8} className="px-4 py-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {/* Procesamiento */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Procesamiento</h4>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          <p>Procesador: {doc.processor}</p>
-                          <p>Tiempo: {doc.processingTime}ms</p>
-                          <p>Versiones: {doc.versions}</p>
-                          <p>Entidades: {doc.entities}</p>
-                        </div>
-                      </div>
-
-                      {/* Calidad */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Calidad</h4>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          <p>Puntuación: {doc.qualityScore}%</p>
-                          <p>Campos críticos: {doc.criticalFields}</p>
-                          <p>Inconsistencias: {doc.inconsistencies}</p>
-                        </div>
-                      </div>
-
-                      {/* Cumplimiento */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Cumplimiento</h4>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          <p>Categoría: {doc.regulatoryCategory}</p>
-                          <p>Criticidad: {doc.criticality}</p>
-                          <p>Estado: {doc.complianceStatus}</p>
-                          <p>Riesgo: {doc.riskLevel}</p>
-                        </div>
-                      </div>
-
-                      {/* Técnicos */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Técnicos</h4>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          <p>Tamaño: {doc.size}KB</p>
-                          <p>Páginas: {doc.pages}</p>
-                          <p>Formato: {doc.format}</p>
-                          <p>DPI: {doc.dpi}</p>
-                        </div>
-                      </div>
-
-                      {/* Contexto */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Contexto</h4>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          <p>Carpeta: {doc.folderPath}</p>
-                          <p>Relacionados: {doc.relatedDocs}</p>
-                          <p>Flujo: {doc.workflow}</p>
-                          <p>Prioridad: {doc.priority}</p>
-                        </div>
-                      </div>
-
-                      {/* Etiquetas */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">Etiquetas</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {doc.tags?.map((tag, i) => (
-                            <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
-                              <Tag className="h-3 w-3 mr-0.5" />
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
+                </div>
+              </td>
+            </tr>
           ))}
         </tbody>
       </table>

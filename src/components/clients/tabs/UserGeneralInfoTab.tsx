@@ -1,7 +1,7 @@
 "use client";
 
 import {
-   Briefcase, CheckCircle2,   AlertTriangle, CalendarCheck, UserCheck, ShieldCheck, FileText, Activity, ClipboardList, BarChart2, BotMessageSquare, Link2
+   Briefcase, CheckCircle2,   AlertTriangle, CalendarCheck, UserCheck, ShieldCheck, FileText, Activity, ClipboardList, BarChart2, MessageSquare, Link2
 } from 'lucide-react';
 
 const user = {
@@ -89,7 +89,7 @@ export function UserGeneralInfoTab() {
       </div>
 
       {/* Grid de cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {/* Completitud documental */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><ClipboardList className="h-4 w-4" /> Completitud documental</div>
@@ -103,6 +103,7 @@ export function UserGeneralInfoTab() {
             </div>
           ))}
         </div>
+
         {/* Actividad documental */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><Activity className="h-4 w-4" /> Actividad documental</div>
@@ -113,6 +114,7 @@ export function UserGeneralInfoTab() {
             </div>
           ))}
         </div>
+
         {/* Documentos requeridos */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><FileText className="h-4 w-4" /> Documentos requeridos</div>
@@ -125,6 +127,7 @@ export function UserGeneralInfoTab() {
             </div>
           ))}
         </div>
+
         {/* Indicadores */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><BarChart2 className="h-4 w-4" /> Indicadores</div>
@@ -135,11 +138,13 @@ export function UserGeneralInfoTab() {
             </div>
           ))}
         </div>
+
         {/* Detección IA */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
-          <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><BotMessageSquare className="h-4 w-4" /> Detección IA</div>
+          <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><MessageSquare className="h-4 w-4" /> Detección IA</div>
           <div className="text-xs text-gray-600 dark:text-gray-300">{aiDetection}</div>
         </div>
+
         {/* Riesgos y cumplimiento */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><ShieldCheck className="h-4 w-4" /> Riesgos y cumplimiento</div>
@@ -150,6 +155,7 @@ export function UserGeneralInfoTab() {
             <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300">Cumple</span>
           </div>
         </div>
+
         {/* Relacionamiento */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2">
           <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200 mb-2"><Link2 className="h-4 w-4" /> Relacionamiento</div>

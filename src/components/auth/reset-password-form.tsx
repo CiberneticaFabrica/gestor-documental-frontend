@@ -88,8 +88,8 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-gray-800">
-      <div className="max-w-md w-full space-y-8 bg-gray-850 p-8 rounded-lg shadow-lg relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 to-blue-800">
+      <div className="max-w-md w-full space-y-8   p-8 rounded-lg shadow-lg relative overflow-hidden bg-glass-background" >
         {/* Background curve effect */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl z-0"></div>
         
@@ -99,12 +99,12 @@ export function ResetPasswordForm() {
             <div className="bg-blue-500 p-2 rounded-full">
               <Mail className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-medium text-white">Gestor Documental</h2>
+            <h2 className="text-xl font-medium text-gray-900">Gestor Documental</h2>
           </div>
           
           <div className="mb-8 space-y-2">
-            <h1 className="text-3xl font-bold text-white">Recuperar Contraseña</h1>
-            <p className="text-gray-400">
+            <h1 className="text-3xl font-bold text-gray-900">Recuperar Contraseña</h1>
+            <p className="text-gray-600">
               Ingresa tu correo electrónico y te enviaremos las instrucciones para restablecer tu contraseña
             </p>
           </div>
@@ -113,15 +113,15 @@ export function ResetPasswordForm() {
         {/* Reset Password Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Correo Electrónico</label>
+            <label className="text-sm font-medium text-gray-600">Correo Electrónico</label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
                 <Mail size={18} />
               </div>
               <input
                 type="email"
                 {...register('email')}
-                className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 pl-10 text-base text-gray-100 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-md border border-gray-700 bg-white px-4 py-3 pl-10 text-base text-gray-100 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
                 placeholder="usuario@ejemplo.com"
               />
             </div>

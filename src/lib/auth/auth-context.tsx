@@ -145,9 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Guardar este usuario básico en localStorage
         localStorage.setItem('user_data', JSON.stringify(userData));
       }
-      
       setUser(userData);
-      toast.success('Inicio de sesión exitoso');
       router.push('/dashboard');
     } catch (error: any) {
       console.error('[Auth] Error en login:', error);
@@ -164,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout();
       localStorage.removeItem('session_token');
       localStorage.removeItem('expires_at');
+      localStorage.removeItem('hasShownWelcome');
       setUser(null);
       toast.success('Sesión cerrada exitosamente');
       router.push('/auth/login');

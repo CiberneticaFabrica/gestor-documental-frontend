@@ -8,15 +8,26 @@ interface UserListTableProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onToggleStatus: (user: User) => void;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatus }: UserListTableProps) {
+type SortKey = 'nombre_usuario' | 'nombre' | 'email' | 'estado' | 'roles' | 'ultimo_acceso';
+
+type SortDirection = 'asc' | 'desc';
+
+export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatus, page, pageSize, total, totalPages, onPageChange }: UserListTableProps) {
   const [filters, setFilters] = useState({
     search: '',
     estado: '',
     rol: ''
   });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('nombre_usuario');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const handleMenuClick = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,48 +60,104 @@ export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatu
     return searchMatch && estadoMatch && rolMatch;
   });
 
+  // Ordenar usuarios
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let aValue: any;
+    let bValue: any;
+    switch (sortKey) {
+      case 'nombre_usuario':
+        aValue = a.nombre_usuario; bValue = b.nombre_usuario; break;
+      case 'nombre':
+        aValue = a.nombre + ' ' + a.apellidos; bValue = b.nombre + ' ' + b.apellidos; break;
+      case 'email':
+        aValue = a.email; bValue = b.email; break;
+      case 'estado':
+        aValue = a.estado; bValue = b.estado; break;
+      case 'roles':
+        aValue = a.roles.map(r => r.nombre_rol).join(',');
+        bValue = b.roles.map(r => r.nombre_rol).join(',');
+        break;
+      case 'ultimo_acceso':
+        aValue = a.ultimo_acceso || '';
+        bValue = b.ultimo_acceso || '';
+        break;
+      default:
+        aValue = '';
+        bValue = '';
+    }
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortIcon = (key: SortKey) => {
+    if (sortKey !== key) return null;
+    return sortDirection === 'asc' ? (
+      <svg className="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+    ) : (
+      <svg className="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <UserFilters onFilter={setFilters} />
       
-      <div className="overflow-x-auto rounded shadow bg-white dark:bg-gray-800">
+      <div className="overflow-x-auto rounded-2xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Usuario</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nombre</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Estado</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Roles</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Último acceso</th>
-              <th className="px-4 py-2"></th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('nombre_usuario')}>Usuario {sortIcon('nombre_usuario')}</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('nombre')}>Nombre {sortIcon('nombre')}</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('email')}>Email {sortIcon('email')}</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('estado')}>Estado {sortIcon('estado')}</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('roles')}>Roles {sortIcon('roles')}</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm" onClick={() => handleSort('ultimo_acceso')}>Último acceso {sortIcon('ultimo_acceso')}</th>
+              <th className="px-4 py-3 text-sm"></th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredUsers.map((user) => (
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+            {sortedUsers.map((user) => (
               <tr 
                 key={user.id_usuario} 
-                className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100" 
+                className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 transition-colors duration-150"
+                style={{ borderRadius: '12px' }}
               >
-                <td className="px-4 py-2">{user.nombre_usuario}</td>
-                <td className="px-4 py-2">{user.nombre} {user.apellidos}</td>
-                <td className="px-4 py-2">{user.email}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                    user.estado === 'activo' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}>
-                    {user.estado}
-                  </span>
+                <td className="px-4 py-2 text-sm">{user.nombre_usuario}</td>
+                <td className="px-4 py-2 text-sm">{user.nombre} {user.apellidos}</td>
+                <td className="px-4 py-2 text-sm">{user.email}</td>
+                <td className="px-4 py-2 text-sm">
+                  {user.estado === 'activo' ? (
+                    <span title="Activo" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span title="Inactivo" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100">
+                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </span>
+                  )}
                 </td>
-                <td className="px-4 py-2">
-                  {user.roles.map((rol) => rol.nombre_rol).join(", ")}
+                <td className="px-4 py-2 text-sm">
+                  {user.roles.map((rol) => (
+                    <span key={rol.id_rol} className="inline-block rounded-full bg-blue-100 text-blue-700 px-3 py-0.5 text-xs font-semibold mr-1 mb-1">
+                      {rol.nombre_rol}
+                    </span>
+                  ))}
                 </td>
-                <td className="px-4 py-2">
-                  {user.ultimo_acceso ? new Date(user.ultimo_acceso).toLocaleString() : "Nunca"}
-                </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-sm">{user.ultimo_acceso ? new Date(user.ultimo_acceso).toLocaleString() : "Nunca"}</td>
+                <td className="px-4 py-2 text-sm">
                   <div className="relative">
                     <button 
                       aria-label="Menú de acciones"
@@ -172,7 +239,32 @@ export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatu
             ))}
           </tbody>
         </table>
+   
+      {/* Paginación real */}
+      <div className="flex justify-between items-center mt-2 mb-4 px-2">
+        <div className="text-xs text-gray-500">Mostrando {users.length} de {total} usuarios</div>
+        <div className="flex gap-1">
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-xs"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+          >&lt;</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              className={`px-3 py-1 rounded text-xs ${p === page ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+              onClick={() => onPageChange(p)}
+              disabled={p === page}
+            >{p}</button>
+          ))}
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-xs"
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+          >&gt;</button>
+        </div>
       </div>
+    </div>
     </div>
   );
 } 

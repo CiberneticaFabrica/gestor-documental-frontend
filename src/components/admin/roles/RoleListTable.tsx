@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface Role extends APIRole {
-  permissions: string[];
+  permissions?: string[];
 }
 
 interface RoleListTableProps {
@@ -11,9 +11,14 @@ interface RoleListTableProps {
   onSelect: (role: Role) => void;
   onDelete?: (roleId: string) => void;
   onViewPermissions?: (roleId: string) => void;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions }: RoleListTableProps) {
+export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions, page, pageSize, total, totalPages, onPageChange }: RoleListTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
 
@@ -47,29 +52,21 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions }: 
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Buscar roles..."
-          className="w-full px-4 py-2 rounded border dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-100 dark:bg-gray-900">
+ 
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+        <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-500">Rol</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-500">Descripción</th>
-            <th className="px-4 py-2 text-xs font-semibold text-gray-500">Acciones</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Rol</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Descripción</th>
+            <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none text-sm">Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700 text-sm">
           {filteredRoles.map((role) => (
-            <tr key={role.id_rol} className="hover:bg-blue-50 dark:hover:bg-gray-700">
-              <td className="px-4 py-2 text-xs font-semibold text-blue-700 dark:text-blue-300">{role.nombre_rol}</td>
-              <td className="px-4 py-2 text-xs">{role.descripcion || '-'}</td>
-              <td className="px-4 py-2 relative">
+            <tr key={role.id_rol} className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 transition-colors duration-150">
+              <td className="px-4 py-2 text-sm">{role.nombre_rol}</td>
+              <td className="px-4 py-2 text-sm">{role.descripcion || '-'}</td>
+              <td className="px-4 py-2 relative text-sm">
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <button
@@ -119,6 +116,29 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions }: 
           ))}
         </tbody>
       </table>
+      <div className="flex justify-between items-center mt-4 px-2">
+        <div className="text-xs text-gray-500">Mostrando {roles.length} de {total} roles</div>
+        <div className="flex gap-1">
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-xs"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+          >&lt;</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              className={`px-3 py-1 rounded text-xs ${p === page ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+              onClick={() => onPageChange(p)}
+              disabled={p === page}
+            >{p}</button>
+          ))}
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-xs"
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+          >&gt;</button>
+        </div>
+      </div>
     </div>
   );
 } 

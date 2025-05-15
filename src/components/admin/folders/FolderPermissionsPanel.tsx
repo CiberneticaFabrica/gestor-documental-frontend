@@ -93,7 +93,7 @@ export function FolderPermissionsPanel({ folder }: FolderPermissionsPanelProps) 
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-white">
-          Permisos de Carpeta - {folder.name}
+          Permisos de Carpeta - {folder.nombre_carpeta}
         </h2>
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"

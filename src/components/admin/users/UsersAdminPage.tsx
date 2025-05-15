@@ -6,7 +6,7 @@ import { UserFormModal } from './UserFormModal';
 import { UserDetailDrawer } from './UserDetailDrawer';
 import { UserGroupsPanel } from './UserGroupsPanel';
 import { fetchUsers } from './fetchUsers';
- 
+
 import { UserStatsCards } from './UserStatsCards';
 import { UserFiltersBar } from './UserFiltersBar';
 
@@ -246,10 +246,10 @@ export default function UsersAdminPage() {
           onViewModeChange={setViewMode}
         />
         <div className="flex-1">
-          {loading ? (
-            <div className="text-center text-gray-400">Cargando usuarios...</div>
+      {loading ? (
+        <div className="text-center text-gray-400">Cargando usuarios...</div>
           ) : viewMode === 'table' ? (
-            <UserListTable
+        <UserListTable 
               users={filteredUsers}
               onSelect={setSelectedUser}
               onEdit={handleEdit}
@@ -264,24 +264,24 @@ export default function UsersAdminPage() {
           ) : (
             <UserListCards
               users={filteredUsers}
-              onSelect={setSelectedUser}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onToggleStatus={handleToggleStatus}
-            />
-          )}
+          onSelect={setSelectedUser}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+        />
+      )}
         </div>
       </div>
       {showForm && (
-        <UserFormModal
-          onClose={() => setShowForm(false)}
+        <UserFormModal 
+          onClose={() => setShowForm(false)} 
           onUserCreated={() => loadUsers(1, pageSize)}
         />
       )}
       {selectedUser && (
-        <UserDetailDrawer
-          user={selectedUser}
-          onClose={() => setSelectedUser(null)}
+        <UserDetailDrawer 
+          user={selectedUser} 
+          onClose={() => setSelectedUser(null)} 
         />
       )}
     </div>

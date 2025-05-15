@@ -16,10 +16,11 @@ body {
 }
 
 .bg-imageLogin {
-  background-image: url('../../public/images/19.jpg');
+  background-image: url('../../public/backgroundwaves.svg');
   background-size: cover;
   background-position: right;
   background-repeat: no-repeat;
+  background-color: #f0f4f8;
 }
 
 .bg-glass-background {

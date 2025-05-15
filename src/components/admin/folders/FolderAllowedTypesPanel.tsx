@@ -59,7 +59,7 @@ export function FolderAllowedTypesPanel({ folder }: FolderAllowedTypesPanelProps
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-white">
-          Tipos de Documento Permitidos - {folder.name}
+          Tipos de Documento Permitidos - {folder.nombre_carpeta}
         </h2>
         <div className="relative">
           <label htmlFor="documentTypeSearch" className="sr-only">
@@ -110,7 +110,7 @@ export function FolderAllowedTypesPanel({ folder }: FolderAllowedTypesPanelProps
                 className="sr-only peer"
                 checked={selectedTypes.includes(type.id)}
                 onChange={() => handleTypeToggle(type.id)}
-                aria-label={`Permitir ${type.name} en ${folder.name}`}
+                aria-label={`Permitir ${type.name} en ${folder.nombre_carpeta}`}
               />
               <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>

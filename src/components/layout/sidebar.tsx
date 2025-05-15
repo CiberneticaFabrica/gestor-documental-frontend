@@ -165,7 +165,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     setMinimized(false);
                     setDocumentsOpen((open) => !open);
                   }}
-                  aria-expanded={documentsOpen ? 'true' : 'false'}
+                  aria-expanded="false"
                   title={minimized ? "Documentos" : undefined}
                 >
                   <FileText className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', pathname.startsWith('/documents') ? 'text-primary-foreground' : ' text-gray-400')} />

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { FolderFormModal } from './FolderFormModal';
 
-interface Folder {
+export interface Folder {
   id_carpeta: string;
   nombre_carpeta: string;
   descripcion: string;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-
+ 
 interface FilterGroupProps {
   title: string;
   children: React.ReactNode;
@@ -14,7 +14,7 @@ function FilterGroup({ title, children, defaultOpen = true }: FilterGroupProps) 
       <button
         className="flex items-center w-full text-left font-semibold text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none"
         onClick={() => setOpen((v) => !v)}
-        aria-expanded={open ? "true" : "false"}
+        aria-expanded="true"
       >
         {open ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
         {title}
@@ -24,10 +24,67 @@ function FilterGroup({ title, children, defaultOpen = true }: FilterGroupProps) 
   );
 }
 
-export function DocumentFiltersSidebar() {
-  // TODO: Recibir y manejar los filtros desde props o contexto
+interface DocumentFiltersSidebarProps {
+  onSearch: (filters: any) => void; // Callback para pasar los filtros al padre
+}
+
+export function DocumentFiltersSidebar({ onSearch }: DocumentFiltersSidebarProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = () => {
+    const filters = {
+      search_term: searchTerm,
+      document_types: null,
+      status: null,
+      date_from: null,
+      date_to: null,
+      fecha_modificacion_desde: null,
+      fecha_modificacion_hasta: null,
+      folders: null,
+      tags: null,
+      metadata_filters: null,
+      creators: null,
+      modificado_por: null,
+      cliente_id: null,
+      cliente_nombre: null,
+      tipo_cliente: null,
+      segmento_cliente: null,
+      nivel_riesgo: null,
+      estado_documental: null,
+      categoria_bancaria: null,
+      confianza_extraccion_min: null,
+      validado_manualmente: null,
+      incluir_eliminados: null,
+      texto_extraido: null,
+      con_alertas_documento: null,
+      con_comentarios: null,
+      tipo_formato: null,
+      page: 1,
+      page_size: 20,
+      sort_by: "fecha_modificacion",
+      sort_order: "DESC"
+    };
+    onSearch(filters);
+  };
+
   return (
     <div>
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar documentos..."
+          className="w-full px-3 py-2 border rounded dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <button
+          className="mt-2 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          onClick={handleSearch}
+        >
+          Buscar
+        </button>
+      </div>
       <FilterGroup title="Perfil">
         <div className="flex flex-col gap-1">
           <label className="inline-flex items-center text-sm">

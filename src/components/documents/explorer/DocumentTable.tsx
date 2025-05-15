@@ -111,7 +111,7 @@ export function DocumentTable({ documents, onSelect }: DocumentTableProps) {
                     {doc.estado}
                   </span>
                 ) : '-'}
-              </td>
+                </td>
               <td className="px-4 py-2 text-sm">v{doc.version_actual}</td>
               <td className="px-4 py-2 text-sm">
                 <div className="relative">
@@ -154,9 +154,9 @@ export function DocumentTable({ documents, onSelect }: DocumentTableProps) {
                   >
                     <MoreVertical className="h-4 w-4 text-gray-500" />
                   </button>
-                </div>
-              </td>
-            </tr>
+                    </div>
+                  </td>
+                </tr>
           ))}
         </tbody>
       </table>

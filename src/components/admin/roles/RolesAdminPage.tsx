@@ -92,7 +92,7 @@ export default function RolesAdminPage() {
       ) : (
         <RoleListCards
           roles={paginatedRoles}
-          onSelect={setSelectedRole}
+          onSelect={setSelectedRole} 
           onDelete={handleRoleDeleted}
           onViewPermissions={setViewingPermissionsRoleId}
         />

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/hooks/use-user';
 import Link from 'next/link';
 import { Mail } from 'lucide-react';
+import Image from 'next/image';
 
 const resetPasswordSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -46,6 +47,7 @@ export function ResetPasswordForm() {
   if (isSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4  bg-white ">
+        
         <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg relative overflow-hidden">
           {/* Background curve effect */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl z-0"></div>
@@ -89,17 +91,25 @@ export function ResetPasswordForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 to-blue-800">
-      <div className="max-w-md w-full space-y-8   p-8 rounded-lg shadow-lg relative overflow-hidden bg-glass-background" >
+        <svg className="pointer-events-none absolute inset-0" viewBox="0 0 960 540" width="100%" height="100%" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <g className="opacity-5 MuiBox-root muiltr-0" fill="none" stroke="currentColor" stroke-width="100">
+          <circle r="234" cx="196" cy="23"></circle><circle r="234" cx="790" cy="491"></circle></g>
+          </svg>
+      <div className="max-w-md w-full space-y-8   p-8 rounded-lg shadow-lg relative overflow-hidden bg-white" >
         {/* Background curve effect */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl z-0"></div>
         
         {/* Header */}
         <div className="relative z-10">
           <div className="flex items-center space-x-2 mb-2">
-            <div className="bg-blue-500 p-2 rounded-full">
-              <Mail className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-xl font-medium text-gray-900">Gestor Documental</h2>
+            
+            <Image 
+                src="/images/cyberlexlogo.png" 
+                alt="CyberLex" 
+                width={400} 
+                height={400} 
+                className="m-0 p-0"
+              />
           </div>
           
           <div className="mb-8 space-y-2">

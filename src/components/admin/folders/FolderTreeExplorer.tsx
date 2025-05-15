@@ -23,12 +23,12 @@ export function FolderTreeExplorer({ folders, onSelect }: FolderTreeExplorerProp
   };
 
   const renderFolder = (folder: Folder, level: number = 0) => {
-    const childFolders = folders.filter(f => f.parentId === folder.id);
-    const isExpanded = expandedFolders.has(folder.id);
+    const childFolders = folders.filter(f => f.carpeta_padre_id === folder.id_carpeta);
+    const isExpanded = expandedFolders.has(folder.id_carpeta);
     const hasChildren = childFolders.length > 0;
 
     return (
-      <div key={folder.id} className="select-none">
+      <div key={folder.id_carpeta} className="select-none">
         <div
           className={`flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 cursor-pointer ${
             level > 0 ? 'ml-' + (level * 4) : ''
@@ -39,7 +39,7 @@ export function FolderTreeExplorer({ folders, onSelect }: FolderTreeExplorerProp
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleFolder(folder.id);
+                toggleFolder(folder.id_carpeta);
               }}
               className="text-gray-400 hover:text-white transition-colors"
               aria-label={isExpanded ? 'Colapsar carpeta' : 'Expandir carpeta'}
@@ -63,11 +63,11 @@ export function FolderTreeExplorer({ folders, onSelect }: FolderTreeExplorerProp
                 d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
               />
             </svg>
-            <span className="text-gray-300">{folder.name}</span>
+            <span className="text-gray-300">{folder.nombre_carpeta}</span>
           </div>
-          {!folder.visible && (
+          {/* {!folder.visible && (
             <span className="text-gray-500 text-sm">(Oculto)</span>
-          )}
+          )} */}
         </div>
         {isExpanded && hasChildren && (
           <div className="mt-1">
@@ -78,7 +78,7 @@ export function FolderTreeExplorer({ folders, onSelect }: FolderTreeExplorerProp
     );
   };
 
-  const rootFolders = folders.filter(folder => !folder.parentId);
+  const rootFolders = folders.filter(folder => !folder.carpeta_padre_id);
 
   return (
     <div className="bg-gray-800 rounded-lg p-4">

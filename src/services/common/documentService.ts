@@ -26,6 +26,14 @@ export interface DocumentsResponse {
   };
 }
 
+export interface DocumentPreview {
+  url: string;
+  mime_type: string;
+  nombre_archivo: string;
+  tamano_bytes: number;
+  expiracion_url: number;
+}
+
 export async function fetchDocuments(page: number = 1, pageSize: number = 10): Promise<DocumentsResponse> {
   const token = localStorage.getItem("session_token");
   const response = await fetch(
@@ -44,12 +52,12 @@ export async function fetchDocuments(page: number = 1, pageSize: number = 10): P
   return response.json();
 }
 
-export async function fetchDocumentContent(documentId: string): Promise<string> {
+export async function fetchDocumentContent(documentId: string): Promise<DocumentPreview> {
   const token = localStorage.getItem("session_token");
   console.log('Fetching document content for ID:', documentId);
   
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}/content`,
+    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}/preview`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -73,5 +81,5 @@ export async function fetchDocumentContent(documentId: string): Promise<string> 
     throw new Error('No se pudo obtener la URL del documento');
   }
   
-  return data.url;
+  return data as DocumentPreview;
 } 

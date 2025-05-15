@@ -1,14 +1,25 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { Document, fetchDocuments, fetchDocumentContent } from '@/services/common/documentService';
+import { Document, fetchDocuments, fetchDocumentContent, DocumentPreview } from '@/services/common/documentService';
 import { toast } from 'sonner';
 import { DocumentTable } from './DocumentTable';
-// import { DocumentFilters } from './DocumentFilters';
+import { DocumentFiltersSidebar } from './DocumentFiltersSidebar';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
+import dynamic from 'next/dynamic';
+
+// Importar react-pdf dinámicamente para evitar problemas con SSR
+const PDFViewer = dynamic(() => import('./PDFViewer'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+  ),
+});
 
 function PreviewPanel({ document }: { document: Document }) {
   const [tab, setTab] = useState<'preview' | 'details'>('preview');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<DocumentPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,9 +30,9 @@ function PreviewPanel({ document }: { document: Document }) {
         setError(null);
         try {
           console.log('Fetching preview for document:', document);
-          const url = await fetchDocumentContent(document.id_documento);
-          console.log('Received preview URL:', url);
-          setPreviewUrl(url);
+          const data = await fetchDocumentContent(document.id_documento);
+          console.log('Received preview data:', data);
+          setPreviewData(data);
         } catch (err) {
           console.error('Error fetching preview:', err);
           setError('Error al cargar la previsualización');
@@ -35,7 +46,8 @@ function PreviewPanel({ document }: { document: Document }) {
   }, [document.id_documento, tab]);
 
   const renderPreview = () => {
-    console.log('Rendering preview with:', { loading, error, previewUrl, document });
+    console.log('Rendering preview with:', { loading, error, previewData, document });
+    
     if (loading) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -53,7 +65,7 @@ function PreviewPanel({ document }: { document: Document }) {
       );
     }
 
-    if (!previewUrl) {
+    if (!previewData) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-gray-400">
           <span className="mb-2">No se puede previsualizar este documento</span>
@@ -62,28 +74,14 @@ function PreviewPanel({ document }: { document: Document }) {
       );
     }
 
-    // Determinar el tipo de archivo por la extensión
-    const extension = document.titulo.split('.').pop()?.toLowerCase();
-    console.log('File extension:', extension);
-    console.log('Preview URL:', previewUrl);
-    
-    if (extension === 'pdf') {
-      return (
-        <iframe
-          src={previewUrl}
-          className="w-full h-full border-0"
-          title={`Preview of ${document.titulo}`}
-        />
-      );
-    }
-
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
-      console.log('Rendering image preview for:', document.titulo);
+    // Determinar el tipo de archivo por el MIME type
+    if (previewData.mime_type.startsWith('image/')) {
+      console.log('Rendering image preview:', previewData.url);
       return (
         <div className="h-full flex items-center justify-center">
           <img
-            src={previewUrl}
-            alt={document.titulo}
+            src={previewData.url}
+            alt={previewData.nombre_archivo}
             className="max-w-full max-h-full object-contain"
             onError={(e) => {
               console.error('Error loading image:', e);
@@ -94,14 +92,26 @@ function PreviewPanel({ document }: { document: Document }) {
       );
     }
 
+    if (previewData.mime_type === 'application/pdf') {
+      console.log('Rendering PDF preview:', previewData.url);
+      return (
+        <div className="h-full">
+          <PDFViewer url={previewData.url} filename={previewData.nombre_archivo} />
+        </div>
+      );
+    }
+
+    // Para otros tipos de archivo
+    console.log('Rendering download link for:', previewData);
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-400">
         <span className="mb-2">Formato no soportado para previsualización</span>
         <a
-          href={previewUrl}
+          href={previewData.url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:text-blue-600"
+          download={previewData.nombre_archivo}
         >
           Descargar archivo
         </a>
@@ -210,7 +220,9 @@ export function DocumentExplorerPage() {
       <aside className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
         <div className="font-bold text-gray-700 dark:text-gray-200 mb-4 text-lg">Filtros</div>
         {/* Aquí irá el componente de filtros avanzado */}
-        <div className="text-gray-500 text-sm">(Filtros próximamente...)</div>
+        <DocumentFiltersSidebar 
+          onSearch={handleFilterChange}
+        />
       </aside>
 
       {/* Listado de documentos */}

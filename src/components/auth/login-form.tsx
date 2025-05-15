@@ -8,15 +8,27 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export default function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('rememberMe') === 'true';
+    }
+    return false;
+  });
   const router = useRouter();
   const { login } = useAuth();
+
+  const handleRememberMeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setRememberMe(isChecked);
+    localStorage.setItem('rememberMe', isChecked.toString());
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +49,18 @@ export default function LoginForm() {
       <div className="absolute inset-0 flex">
         <div className="w-1/2 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-10 text-white hidden md:flex flex-col justify-center py-16">
           <div>
-            <div className="flex items-center gap-2 mb-6">
-              <span className="bg-white rounded-full p-2">
-                <CircleUser className="h-6 w-6 text-blue-900" />
-              </span>
-              <span className="text-2xl font-bold tracking-tight">Gestor Doc</span>
+            <div className="flex items-center gap-2 mb-1">
+            <Image 
+                src="/images/cybelexlogoblanco.png" 
+                alt="CyberLex" 
+                width={400} 
+                height={400} 
+                className="h-20 mr-2"
+              />
+         
             </div>
-
+     
+         
             <h2 className="text-2xl font-bold mb-2 leading-tight">Inicia sesión y gestiona tus documentos</h2>
             <p className="mb-6 text-blue-100 text-base leading-relaxed max-w-md">
               Accede a tu cuenta para administrar, cargar y consultar documentos de manera segura y eficiente.
@@ -76,7 +93,12 @@ export default function LoginForm() {
           </div>
         </div>
 
-        <div className="w-1/2 bg-white  hidden md:block"></div>
+        <div className="w-1/2 bg-white  hidden md:block  ">
+        <svg className="pointer-events-none absolute inset-0" viewBox="0 0 960 540" width="100%" height="100%" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <g className="opacity-5 MuiBox-root muiltr-0" fill="none" stroke="currentColor" stroke-width="100">
+          <circle r="234" cx="196" cy="23"></circle><circle r="234" cx="790" cy="491"></circle></g>
+          </svg>
+        </div>
       </div>
 
       {/* Contenedor del formulario centrado */}
@@ -158,7 +180,7 @@ export default function LoginForm() {
                   name="remember-me"
                   type="checkbox"
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  onChange={handleRememberMeChange}
                   className="h-4 w-4 rounded border-gray-300 text-primary"
                 />
                 <label

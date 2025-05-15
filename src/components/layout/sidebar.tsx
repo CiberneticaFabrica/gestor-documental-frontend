@@ -2,14 +2,12 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   FileText,
   Users,
   Settings,
-  X,
-  ChevronLeft,
-  ChevronRight,
   FolderArchive,
   BarChart3,
   Shield,
@@ -17,17 +15,18 @@ import {
   AlertCircle,
   Upload,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
-const navigation = [
+const mainMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Documentos', href: '/documents', icon: FileText },
-  { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Clientes', href: '/clients', icon: Users },
+  { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Reportes', href: '/reports', icon: BarChart3 },
-  { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
 const documentsSubmenu = [
@@ -38,13 +37,12 @@ const documentsSubmenu = [
   { name: 'Verificación', href: '/documents/verification', icon: CheckCircle },
 ];
 
-const adminSubmenu = [
+const adminMenu = [
   { name: 'Usuarios', href: '/admin/users', icon: Users },
   { name: 'Carpetas', href: '/admin/folders', icon: FolderArchive },
   { name: 'Roles', href: '/admin/roles', icon: Shield },
+  { name: 'Configuración', href: '/settings', icon: Settings },
 ];
-
- 
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -56,8 +54,8 @@ interface SidebarProps {
 export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
@@ -93,154 +91,132 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
           'w-64 lg:translate-x-0 lg:z-0'
         )}
       >
-        <div className="flex h-16 items-center justify-between px-4 border-b">
-          {!minimized && (
-            <div className="flex items-center">
-              <span className="text-xl font-semibold">Gestor Doc</span>
-            </div>
-          )}
-          <div className="flex items-center">
-            <button
-              onClick={() => setMinimized(!minimized)}
-              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700"
-              aria-label={minimized ? "Expandir sidebar" : "Minimizar sidebar"}
-            >
-              {minimized ? (
-                <ChevronRight className="h-5 w-5" />
+        <div className="flex flex-col h-full">
+          {/* Logo y título */}
+          <div className="flex items-center h-16 px-4 border-b">
+            <div className={minimized ? "flex-1 flex justify-center" : "flex items-center"}>
+              {!minimized ? (
+                <Image 
+                  src={theme === 'dark' ? "/images/cybelexlogoblanco.png" : "/images/cyberlexlogo.png"} 
+                  alt="Cyberlex" 
+                  width={400} 
+                  height={400} 
+                  className="h-9 mr-2"
+                />
               ) : (
-                <ChevronLeft className="h-5 w-5" />
-              )}
-            </button>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden ml-1 flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700"
-              aria-label="Cerrar menú"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        <nav className="mt-5 px-2 flex-1">
-          <div className="space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              const isDocuments = item.name === 'Documentos';
-              
-              return (
-                <div key={item.name}>
-                  {isDocuments ? (
-                    <>
-                      <button
-                        type="button"
-                        className={cn(
-                          'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
-                          pathname.startsWith('/documents') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50'
-                        )}
-                        onClick={() => setDocumentsOpen((open) => !open)}
-                        aria-expanded={documentsOpen ? "true" : "false"}
-                      >
-                        <item.icon className={cn('h-6 w-6 flex-shrink-0', minimized ? 'mx-auto' : 'mr-3', pathname.startsWith('/documents') ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                        {!minimized && <span>{item.name}</span>}
-                        {!minimized && (
-                          <ChevronRight
-                            className={cn('ml-auto h-4 w-4 transition-transform', documentsOpen ? 'rotate-90' : '')}
-                          />
-                        )}
-                      </button>
-                      {/* Submenú de Documentos */}
-                      {documentsOpen && !minimized && (
-                        <div className="ml-8 mt-1 space-y-1">
-                          {documentsSubmenu.map((sub) => {
-                            const isSubActive = pathname === sub.href;
-                            return (
-                              <Link
-                                key={sub.name}
-                                href={sub.href}
-                                className={cn(
-                                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
-                                  isSubActive
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'text-foreground hover:bg-secondary/50'
-                                )}
-                              >
-                                <sub.icon className={cn('h-5 w-5 mr-2', isSubActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                                <span>{sub.name}</span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-foreground hover:bg-secondary/50'
-                      )}
-                    >
-                      <item.icon
-                        className={cn(
-                          'h-6 w-6 flex-shrink-0',
-                          minimized ? 'mx-auto' : 'mr-3',
-                          isActive ? 'text-primary-foreground' : 'text-muted-foreground'
-                        )}
-                      />
-                      {!minimized && <span>{item.name}</span>}
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Submenú de Administración */}
-            <div>
-              <button
-                type="button"
-                className={cn(
-                  'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
-                  pathname.startsWith('/admin') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50'
-                )}
-                onClick={() => setAdminOpen((open) => !open)}
-                aria-expanded={!!adminOpen}
-              >
-                <Shield className={cn('h-6 w-6 flex-shrink-0', minimized ? 'mx-auto' : 'mr-3', pathname.startsWith('/admin') ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                {!minimized && <span>Administración</span>}
-                {!minimized && (
-                  <ChevronRight
-                    className={cn('ml-auto h-4 w-4 transition-transform', adminOpen ? 'rotate-90' : '')}
-                  />
-                )}
-              </button>
-              {/* Submenú desplegable */}
-              {adminOpen && !minimized && (
-                <div className="ml-8 mt-1 space-y-1">
-                  {adminSubmenu.map((sub) => {
-                    const isSubActive = pathname === sub.href;
-                    return (
-                      <Link
-                        key={sub.name}
-                        href={sub.href}
-                        className={cn(
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
-                          isSubActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-foreground hover:bg-secondary/50'
-                        )}
-                      >
-                        <sub.icon className={cn('h-5 w-5 mr-2', isSubActive ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                        <span>{sub.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                <Image 
+                  src={theme === 'dark' ? "/images/cyberlexlogosintexto.png" : "/images/cyberlexlogosintexto.png"} 
+                  alt="Cyberlex" 
+                  width={400} 
+                  height={400} 
+                  className="h-9 mr-2"
+                />
               )}
             </div>
           </div>
-        </nav>
+
+          {/* Botón de minimizar */}
+          <button
+            onClick={() => setMinimized(!minimized)}
+            className="absolute right-0 top-16 w-4 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-neutral-700 border-l hidden lg:flex"
+            aria-label={minimized ? 'Expandir sidebar' : 'Minimizar sidebar'}
+          >
+            {minimized ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+
+          <nav className="flex-1 px-2 py-4 space-y-6">
+            {/* MENÚ PRINCIPAL */}
+            <div>
+              <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
+                {minimized ? <span className="text-lg">…</span> : "MENÚ"}
+              </div>
+              <div className="space-y-1">
+                {mainMenu.map((item) => (
+                  <SidebarLink
+                    key={item.name}
+                    icon={item.icon}
+                    href={item.href}
+                    label={item.name}
+                    active={pathname === item.href}
+                    minimized={minimized}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* DOCUMENTACIÓN */}
+            <div>
+              <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
+                {minimized ? <span className="text-lg">…</span> : "DOCUMENTACIÓN"}
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className={cn(
+                    'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
+                    pathname.startsWith('/documents') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50',
+                    minimized ? 'justify-center' : ''
+                  )}
+                  onClick={() => {
+                    setMinimized(false);
+                    setDocumentsOpen((open) => !open);
+                  }}
+                  aria-expanded={documentsOpen ? 'true' : 'false'}
+                  title={minimized ? "Documentos" : undefined}
+                >
+                  <FileText className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', pathname.startsWith('/documents') ? 'text-primary-foreground' : ' text-gray-400')} />
+                  {!minimized && <span>Documentos</span>}
+                  {!minimized && (
+                    <svg className={cn('ml-auto h-4 w-4 transition-transform', documentsOpen ? 'rotate-90' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+                {documentsOpen && !minimized && (
+                  <div className="ml-8 mt-1 space-y-1 relative">
+                    {/* Línea vertical */}
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100" />
+                    {documentsSubmenu.map((sub) => (
+                      <SidebarLink
+                        key={sub.name}
+                        icon={sub.icon}
+                        href={sub.href}
+                        label={sub.name}
+                        active={pathname === sub.href}
+                        small
+                        showDot={pathname === sub.href}
+                        minimized={minimized}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ADMINISTRACIÓN */}
+            <div>
+              <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
+                {minimized ? <span className="text-lg">…</span> : "ADMINISTRACIÓN"}
+              </div>
+              <div className="space-y-1">
+                {adminMenu.map((item) => (
+                  <SidebarLink
+                    key={item.name}
+                    icon={item.icon}
+                    href={item.href}
+                    label={item.name}
+                    active={pathname === item.href}
+                    minimized={minimized}
+                  />
+                ))}
+              </div>
+            </div>
+          </nav>
+        </div>
 
         {!minimized && user && (
           <div className="p-4 border-t">
@@ -301,5 +277,58 @@ export function Breadcrumbs() {
         )}
       </ol>
     </nav>
+  );
+}
+
+function SidebarLink({
+  icon: Icon,
+  href,
+  label,
+  active = false,
+  small = false,
+  showDot = false,
+  minimized = false,
+}: {
+  icon: any,
+  href: string,
+  label: string,
+  active?: boolean,
+  small?: boolean,
+  showDot?: boolean,
+  minimized?: boolean,
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center px-2 py-2 rounded group relative transition-colors',
+        active
+          ? 'bg-primary font-semibold text-primary-foreground'
+          : 'text-foreground hover:bg-gray-100',
+        small ? 'text-xs pl-7' : ''
+      )}
+    >
+      {/* Punto azul para el submenú activo */}
+      {showDot && (
+        <span className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500" />
+      )}
+      <Icon
+        className={cn(
+          minimized ? 'mx-auto' : 'mr-3',
+          'h-5 w-5',
+          active ? 'text-primary-foreground' : 'text-gray-400 group-hover:text-primary'
+        )}
+      />
+      <span
+        className={cn(
+          'text-sm font-medium',
+          active ? 'text-primary-foreground' : '',
+          small ? 'text-xs' : '',
+          minimized ? 'hidden' : ''
+        )}
+      >
+        {label}
+      </span>
+    </Link>
   );
 }

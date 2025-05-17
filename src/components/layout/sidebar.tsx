@@ -17,10 +17,12 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Home,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import { clientService } from '@/lib/api/services/client.service';
 
 const mainMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -179,7 +181,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                 {documentsOpen && !minimized && (
                   <div className="ml-8 mt-1 space-y-1 relative">
                     {/* Línea vertical */}
-                    <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100" />
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100 text-sm" />
                     {documentsSubmenu.map((sub) => (
                       <SidebarLink
                         key={sub.name}
@@ -202,7 +204,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
               <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
                 {minimized ? <span className="text-lg">…</span> : "ADMINISTRACIÓN"}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 ">
                 {adminMenu.map((item) => (
                   <SidebarLink
                     key={item.name}
@@ -211,6 +213,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     label={item.name}
                     active={pathname === item.href}
                     minimized={minimized}
+                     
                   />
                 ))}
               </div>
@@ -238,44 +241,80 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
 
 export function Breadcrumbs() {
   const pathname = usePathname();
+  const [clientName, setClientName] = useState<string | null>(null);
   
-  // Función para convertir la ruta a un formato legible
-  const getReadablePath = (path: string) => {
-    if (path === '/dashboard') return 'Dashboard';
-    return path.split('/').map(segment => {
-      if (!segment) return '';
-      return segment.charAt(0).toUpperCase() + segment.slice(1);
-    }).filter(Boolean);
-  };
-  
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const readablePath = getReadablePath(pathname);
-  
+  useEffect(() => {
+    const fetchClientName = async () => {
+      const segments = pathname.split('/');
+      const clientId = segments[segments.length - 1];
+      
+      if (segments.includes('clients') && clientId && clientId !== 'clients') {
+        try {
+          const data = await clientService.getClientDetail(clientId);
+          setClientName(data.cliente.nombre_razon_social);
+        } catch (error) {
+          console.error('Error fetching client name:', error);
+        }
+      } else {
+        // Limpiar el nombre del cliente cuando no estamos en una página de detalle
+        setClientName(null);
+      }
+    };
+
+    fetchClientName();
+  }, [pathname]);
+
+  // Construir los items del breadcrumb
+  const items = pathname.split('/').filter(Boolean).map((segment, index, array) => {
+    const href = '/' + array.slice(0, index + 1).join('/');
+    let label = segment;
+
+    // Formatear labels específicos
+    if (segment === 'clients') {
+      label = 'Clientes';
+    } else if (segment === 'documents') {
+      label = 'Documentos';
+    } else if (segment === 'users') {
+      label = 'Usuarios';
+    } else if (segment === 'settings') {
+      label = 'Configuración';
+    } else if (segment === 'dashboard') {
+      label = 'Dashboard';
+    }
+
+    // Si es el último segmento y tenemos el nombre del cliente, usarlo
+    if (index === array.length - 1 && clientName && segment === array[array.length - 1]) {
+      label = clientName;
+    }
+
+    return {
+      label,
+      href,
+    };
+  });
+
   return (
-    <nav className="flex items-center" aria-label="Breadcrumb">
-      <ol className="flex items-center space-x-2">
-        <li>
-          <Link href="/dashboard" className="text-sm font-medium text-primary flex items-center">
-            <LayoutDashboard className="mr-1 h-4 w-4" />
-            <span>Inicio</span>
+    <nav className="flex items-center space-x-2 text-sm">
+      <Link
+        href="/"
+        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        <Home className="h-4 w-4" />
+      </Link>
+      {items.map((item, index) => (
+        <div key={item.href} className="flex items-center">
+          <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
+          <Link
+            href={item.href}
+            className={cn(
+              'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
+              index === items.length - 1 && 'font-medium text-gray-900 dark:text-gray-100'
+            )}
+          >
+            {item.label}
           </Link>
-        </li>
-        {Array.isArray(readablePath) ? (
-          readablePath.map((segment, index) => (
-            <li key={index} className="flex items-center">
-              <span className="mx-2 text-muted-foreground">/</span>
-              <span className="text-sm font-medium text-foreground">{segment}</span>
-            </li>
-          ))
-        ) : (
-          pathname !== '/dashboard' && (
-            <li className="flex items-center">
-              <span className="mx-2 text-muted-foreground">/</span>
-              <span className="text-sm font-medium text-foreground">{readablePath}</span>
-            </li>
-          )
-        )}
-      </ol>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -301,11 +340,11 @@ function SidebarLink({
     <Link
       href={href}
       className={cn(
-        'flex items-center px-2 py-2 rounded group relative transition-colors',
+        'flex items-center px-2 py-2 rounded group relative transition-colors ',
         active
           ? 'bg-primary font-semibold text-primary-foreground'
           : 'text-foreground hover:bg-gray-100',
-        small ? 'text-xs pl-7' : ''
+        small ? 'text-sm pl-7' : ''
       )}
     >
       {/* Punto azul para el submenú activo */}

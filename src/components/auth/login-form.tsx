@@ -209,13 +209,13 @@ export default function LoginForm() {
             </Button>
           </form>
 
-          {/* Registro */}
+          {/* Registro 
           <div className="mt-8 text-center text-sm text-gray-500 ">
             ¿No tienes una cuenta?{' '}
             <Link href="/auth/register" className="text-blue-600 hover:underline">
               Regístrate
             </Link>
-          </div>
+          </div>*/}
         </div>
       </div>
     </div>

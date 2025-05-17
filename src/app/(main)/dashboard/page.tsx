@@ -23,12 +23,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 w-full">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Bienvenido de nuevo, {user?.username}
-        </p>
-      </div>
+  
 
       {/* Métricas principales - Sin restricción de ancho máximo */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 w-full">
@@ -89,7 +84,7 @@ export default function DashboardPage() {
       
         <Card className="w-full">
 
-          <CardContent className='p-0 m-0 '>
+          <CardContent className='p-0 m-0'>
             <MetricTabs />
           </CardContent>
         </Card>

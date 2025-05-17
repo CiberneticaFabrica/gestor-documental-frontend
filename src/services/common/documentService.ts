@@ -14,6 +14,8 @@ export interface Document {
   tags: string[] | null;
   creado_por_usuario: string;
   modificado_por_usuario: string;
+  id_cliente: string;
+  cliente_nombre: string;
 }
 
 export interface DocumentsResponse {
@@ -34,7 +36,7 @@ export interface DocumentPreview {
   expiracion_url: number;
 }
 
-export async function fetchDocuments(page: number = 1, pageSize: number = 10): Promise<DocumentsResponse> {
+export async function fetchDocuments(page: number = 1, pageSize: number = 1000): Promise<DocumentsResponse> {
   const token = localStorage.getItem("session_token");
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents?page=${page}&page_size=${pageSize}`,

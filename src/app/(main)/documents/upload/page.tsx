@@ -1,4 +1,6 @@
-import DocumentUploadPage from '@/components/documents/upload/DocumentUploadPage';
+'use client';
+import { DocumentUpload } from '@/components/documents/upload/DocumentUploadPage';
+
 export default function Page() {
-  return <DocumentUploadPage />;
+  return <DocumentUpload />;
 } 

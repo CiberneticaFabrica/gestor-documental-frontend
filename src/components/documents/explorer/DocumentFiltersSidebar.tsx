@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
- 
+import { DocumentTable } from './DocumentTable';
+import { clientService, Client } from '@/lib/api/services/client.service';
+import { documentService } from '@/lib/api/services/document.service';
+import Select from 'react-select';
+
 interface FilterGroupProps {
   title: string;
   children: React.ReactNode;
@@ -30,39 +34,27 @@ interface DocumentFiltersSidebarProps {
 
 export function DocumentFiltersSidebar({ onSearch }: DocumentFiltersSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [clientes, setClientes] = useState<Client[]>([]);
+  const [selectedClientes, setSelectedClientes] = useState<string[]>([]);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    async function fetchClientes() {
+      try {
+        const data = await clientService.getClients(1, 1000);
+        setClientes(data.clientes);
+      } catch (error) {
+        // Maneja el error si lo deseas
+        console.error('Error al obtener clientes:', error);
+      }
+    }
+    fetchClientes();
+  }, []);
+
+  const handleSearch = async () => {
     const filters = {
       search_term: searchTerm,
-      document_types: null,
-      status: null,
-      date_from: null,
-      date_to: null,
-      fecha_modificacion_desde: null,
-      fecha_modificacion_hasta: null,
-      folders: null,
-      tags: null,
-      metadata_filters: null,
-      creators: null,
-      modificado_por: null,
-      cliente_id: null,
-      cliente_nombre: null,
-      tipo_cliente: null,
-      segmento_cliente: null,
-      nivel_riesgo: null,
-      estado_documental: null,
-      categoria_bancaria: null,
-      confianza_extraccion_min: null,
-      validado_manualmente: null,
-      incluir_eliminados: null,
-      texto_extraido: null,
-      con_alertas_documento: null,
-      con_comentarios: null,
-      tipo_formato: null,
-      page: 1,
-      page_size: 20,
-      sort_by: "fecha_modificacion",
-      sort_order: "DESC"
+      cliente_id: selectedClientes.length > 0 ? selectedClientes : null,
+      // ...otros filtros
     };
     onSearch(filters);
   };
@@ -85,6 +77,74 @@ export function DocumentFiltersSidebar({ onSearch }: DocumentFiltersSidebarProps
           Buscar
         </button>
       </div>
+      <FilterGroup title="Cliente">
+        <Select
+          isMulti
+          options={clientes.map(cliente => ({
+            value: cliente.id_cliente,
+            label: cliente.nombre_razon_social
+          }))}
+          value={clientes
+            .filter(cliente => selectedClientes.includes(cliente.id_cliente))
+            .map(cliente => ({
+              value: cliente.id_cliente,
+              label: cliente.nombre_razon_social
+            }))
+          }
+          onChange={options => {
+            setSelectedClientes(options ? options.map(opt => opt.value) : []);
+          }}
+          placeholder="Seleccionar cliente(s)..."
+          className="text-sm"
+          classNamePrefix="react-select"
+          styles={{
+            control: (base) => ({
+              ...base,
+              backgroundColor: 'var(--tw-bg-opacity, 1) #374151', // dark:bg-gray-700
+              color: 'white',
+              borderColor: '#4B5563', // dark:border-gray-600
+            }),
+            menu: (base) => ({
+              ...base,
+              backgroundColor: 'var(--tw-bg-opacity, 1) #374151',
+              color: 'white',
+            }),
+            option: (base, state) => ({
+              ...base,
+              backgroundColor: state.isFocused ? '#2563eb' : '#374151',
+              color: 'white',
+            }),
+            multiValue: (base) => ({
+              ...base,
+              backgroundColor: '#2563eb',
+              color: 'white',
+            }),
+            multiValueLabel: (base) => ({
+              ...base,
+              color: 'white',
+            }),
+            multiValueRemove: (base) => ({
+              ...base,
+              color: 'white',
+              ':hover': {
+                backgroundColor: '#1e40af',
+                color: 'white',
+              },
+            }),
+          }}
+          theme={theme => ({
+            ...theme,
+            borderRadius: 6,
+            colors: {
+              ...theme.colors,
+              primary25: '#2563eb',
+              primary: '#2563eb',
+              neutral0: '#374151',
+              neutral80: 'white',
+            },
+          })}
+        />
+      </FilterGroup>
       <FilterGroup title="Perfil">
         <div className="flex flex-col gap-1">
           <label className="inline-flex items-center text-sm">
@@ -122,4 +182,4 @@ export function DocumentFiltersSidebar({ onSearch }: DocumentFiltersSidebarProps
       </FilterGroup>
     </div>
   );
-} 
+}

@@ -1,14 +1,17 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { UserListTable } from './UserListTable';
+import { UserListTable } from '@/components/admin/users/UserListTable';
 import { UserFormModal } from './UserFormModal';
 import { UserDetailDrawer } from './UserDetailDrawer';
 import { UserGroupsPanel } from './UserGroupsPanel';
 import { fetchUsers } from './fetchUsers';
+import { userService } from '@/services/common/userService';
+import { Modal } from '@/components/common/Modal';
+import { toast } from 'react-hot-toast';
 
 import { UserStatsCards } from './UserStatsCards';
-import { UserFiltersBar } from './UserFiltersBar';
+import { UserFiltersBar } from './UserFiltersBar'; 
 
 export interface User {
   id_usuario: string;
@@ -143,12 +146,14 @@ export default function UsersAdminPage() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const loadUsers = async (pageToLoad = page, pageSizeToLoad = pageSize) => {
     setLoading(true);
     try {
       const data = await fetchUsers(pageToLoad, pageSizeToLoad);
-      setUsers(data.users);
+      setUsers(data.users as User[]);
       setTotal(data.pagination.total);
       setTotalPages(data.pagination.total_pages);
       setPage(data.pagination.page);
@@ -171,21 +176,23 @@ export default function UsersAdminPage() {
   };
 
   const handleDelete = async (user: User) => {
-    if (window.confirm('¿Está seguro de eliminar este usuario?')) {
-      try {
-        const token = localStorage.getItem("session_token");
-        await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/users/${user.id_usuario}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        loadUsers(); // Recargar lista
-      } catch (error) {
-        console.error("Error al eliminar usuario:", error);
-      }
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      await userService.deleteUser(userToDelete.id_usuario);
+      toast.success("Usuario eliminado exitosamente");
+      loadUsers(); // Recargar lista
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      toast.error("Error al eliminar usuario");
+    } finally {
+      setShowDeleteModal(false);
+      setUserToDelete(null);
     }
   };
 
@@ -283,6 +290,42 @@ export default function UsersAdminPage() {
           user={selectedUser} 
           onClose={() => setSelectedUser(null)} 
         />
+      )}
+      {showDeleteModal && userToDelete && (
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+          }}
+          title="Confirmar eliminación"
+        >
+          <div className="p-4">
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              ¿Está seguro que desea eliminar al usuario <span className="font-semibold">{userToDelete.nombre_usuario}</span>?
+            </p>
+            <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setUserToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

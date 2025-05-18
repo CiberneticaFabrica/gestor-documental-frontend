@@ -6,6 +6,9 @@ import { DocumentTable } from './DocumentTable';
 import { DocumentFiltersSidebar } from './DocumentFiltersSidebar';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 import dynamic from 'next/dynamic';
+import { documentService } from '@/lib/api/services/document.service';
+import { Modal } from '@/components/ui/modal';
+import { DocumentUpload } from '@/components/documents/upload/DocumentUploadPage';
 
 // Importar react-pdf dinámicamente para evitar problemas con SSR
 const PDFViewer = dynamic(() => import('./PDFViewer'), {
@@ -22,6 +25,7 @@ function PreviewPanel({ document }: { document: Document }) {
   const [previewData, setPreviewData] = useState<DocumentPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     const fetchPreview = async () => {
@@ -119,9 +123,34 @@ function PreviewPanel({ document }: { document: Document }) {
     );
   };
 
+  const handleVersionUpload = () => {
+    setShowUploadModal(true);
+  };
+
+  const handleVersionUploaded = (documentId: string) => {
+    setShowUploadModal(false);
+    // Refrescar la previsualización
+    if (tab === 'preview') {
+      setLoading(true);
+      fetchDocumentContent(document.id_documento)
+        .then(data => {
+          setPreviewData(data);
+          // Mostrar una notificación o mensaje de éxito
+          toast.success("Nueva versión subida correctamente");
+        })
+        .catch(err => {
+          console.error('Error actualizando previsualización:', err);
+          toast.error("Error al actualizar la previsualización");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-2">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-2 items-center">
         <button
           className={`px-4 py-2 text-sm font-semibold rounded-t ${tab === 'preview' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-600 dark:text-gray-300'}`}
           onClick={() => setTab('preview')}
@@ -134,6 +163,7 @@ function PreviewPanel({ document }: { document: Document }) {
         >
           Details
         </button>
+       
       </div>
       <div className="flex-1 overflow-auto">
         {tab === 'preview' ? (
@@ -165,6 +195,18 @@ function PreviewPanel({ document }: { document: Document }) {
           </div>
         )}
       </div>
+      
+      {/* Modal para subir una nueva versión */}
+      {showUploadModal && (
+        <Modal onClose={() => setShowUploadModal(false)}>
+          <DocumentUpload
+            idCliente={document.id_cliente}
+            idDocumento={document.id_documento}
+            onUploaded={handleVersionUploaded}
+            isNewVersion={true}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
@@ -177,11 +219,29 @@ export function DocumentExplorerPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     type: '',
     status: ''
   });
+
+  const refreshDocuments = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchDocuments(page, pageSize);
+      setDocuments(data.documentos);
+      setTotal(data.pagination.total);
+      setTotalPages(data.pagination.total_pages);
+      setPage(data.pagination.page);
+      setPageSize(data.pagination.page_size);
+    } catch (error) {
+      console.error("Error al recargar documentos:", error);
+      toast.error("Error al recargar los documentos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadDocuments = async (pageToLoad = page, pageSizeToLoad = pageSize) => {
     setLoading(true);
@@ -204,31 +264,78 @@ export function DocumentExplorerPage() {
     loadDocuments();
   }, [page, pageSize]);
 
-  const handleFilterChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
-    // TODO: Implementar filtrado en el backend
-    console.log('Filtros aplicados:', newFilters);
+  const handleFilterChange = (documentsFromSearch: Document[]) => {
+    setDocuments(documentsFromSearch);
+    setTotal(documentsFromSearch.length);
+    setTotalPages(1);
+    setPage(1);
   };
 
   const handleDocumentSelect = (doc: Document) => {
     setSelectedDocument(doc);
   };
 
+  const handleSearch = async (filters: any) => {
+    setLoading(true);
+    try {
+      const data = await documentService.searchDocuments(filters);
+      // Actualiza el estado con los documentos recibidos
+      const documentos = Array.isArray(data.documentos) ? data.documentos : [];
+      setDocuments(documentos);
+      
+      // Actualiza la información de paginación
+      setTotal(documentos.length);
+      setTotalPages(1); // Con búsqueda personalizada normalmente se muestra una sola página
+      setPage(1);
+      
+      if (documentos.length === 0) {
+        toast.info("No se encontraron documentos con los filtros especificados");
+      }
+    } catch (error) {
+      console.error("Error al buscar documentos:", error);
+      toast.error("Error al buscar documentos");
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-[80vh] bg-gray-100 dark:bg-gray-900 rounded-lg shadow overflow-hidden">
       {/* Sidebar de filtros */}
-      <aside className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
-        <div className="font-bold text-gray-700 dark:text-gray-200 mb-4 text-lg">Filtros</div>
-        {/* Aquí irá el componente de filtros avanzado */}
-        <DocumentFiltersSidebar 
-          onSearch={handleFilterChange}
-        />
+      <aside className={`${isSidebarCollapsed ? 'w-0' : 'w-72'} transition-all duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden`}>
+        <div className="p-4 overflow-y-auto">
+          <div className="font-bold text-gray-700 dark:text-gray-200 mb-4 text-lg">Filtros</div>
+          <DocumentFiltersSidebar onSearch={handleSearch} />
+        </div>
       </aside>
 
       {/* Listado de documentos */}
       <main className="flex-1 flex flex-col">
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Explorador de Documentos</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Explorador de Documentos</h1>
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+            >
+              {isSidebarCollapsed ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Abrir filtros
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Ocultar filtros
+                </>
+              )}
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-auto p-4">
           <DocumentTable 

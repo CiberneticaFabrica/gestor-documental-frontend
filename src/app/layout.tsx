@@ -12,7 +12,7 @@ const inter = Roboto(
   });
 
 export const metadata: Metadata = {
-  title: "Gestor Documental",
+  title: "CyberLex",
   description: "Sistema de gestión documental",
   icons: {
     icon: '/favicon.ico',

@@ -4,6 +4,7 @@ export interface Document {
   id_documento: string;
   codigo_documento: string;
   titulo: string;
+  id_carpeta: string;
   // ...otros campos opcionales
 }
 

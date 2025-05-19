@@ -1,13 +1,9 @@
-import { Role as APIRole } from '@/services/common/roleService';
+import { Role, roleService } from '@/services/common/roleService';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-interface Role extends APIRole {
-  permissions?: string[];
-}
-
 interface RoleListTableProps {
-  roles: APIRole[];
+  roles: Role[];
   onSelect: (role: Role) => void;
   onDelete?: (roleId: string) => void;
   onViewPermissions?: (roleId: string) => void;
@@ -28,31 +24,70 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions, pa
   );
 
   const handleDelete = async (roleId: string) => {
-    if (window.confirm('¿Está seguro de eliminar este rol?')) {
-      try {
-        const token = localStorage.getItem("session_token");
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/roles/${roleId}`,
-          {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+    toast.promise(
+      new Promise((resolve, reject) => {
+        toast.custom((t) => (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-sm w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirmar eliminación</h3>
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  reject();
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              ¿Está seguro que desea eliminar este rol? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  reject();
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await roleService.deleteRole(roleId);
+                    toast.dismiss(t);
         toast.success("Rol eliminado exitosamente");
         if (onDelete) onDelete(roleId);
+                    resolve(true);
       } catch (error) {
         console.error("Error al eliminar el rol:", error);
         toast.error("Error al eliminar el rol");
+                    reject(error);
       }
-    }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ), {
+          duration: Infinity,
+        });
+      }),
+      {
+        loading: 'Eliminando rol...',
+        success: 'Rol eliminado exitosamente',
+        error: 'Error al eliminar el rol'
+      }
+    );
     setShowActionsMenu(null);
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
- 
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
@@ -85,7 +120,7 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions, pa
                           <button
                             onClick={() => {
                               setShowActionsMenu(null);
-                              onSelect({ ...role, permissions: [] });
+                              onSelect(role);
                             }}
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
@@ -117,7 +152,9 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions, pa
         </tbody>
       </table>
       <div className="flex justify-between items-center mt-4 px-2">
-        <div className="text-xs text-gray-500">Mostrando {roles.length} de {total} roles</div>
+        <div className="text-xs text-gray-500">
+          Mostrando {roles.length} de {total} roles (Página {page} de {totalPages})
+        </div>
         <div className="flex gap-1">
           <button
             className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-xs"
@@ -129,7 +166,6 @@ export function RoleListTable({ roles, onSelect, onDelete, onViewPermissions, pa
               key={p}
               className={`px-3 py-1 rounded text-xs ${p === page ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
               onClick={() => onPageChange(p)}
-              disabled={p === page}
             >{p}</button>
           ))}
           <button

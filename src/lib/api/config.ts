@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const API_CONFIG = {
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod',
   timeout: 30000,
@@ -39,6 +41,12 @@ export const API_ENDPOINTS = {
     list: '/roles',
     detail: (id: string) => `/roles/${id}`,
     permissions: (id: string) => `/roles/${id}/permissions`,
+  },
+  
+  // Permissions
+  permissions: {
+    list: '/permissions',
+    detail: (id: string) => `/permissions/${id}`,
   },
   
   // Documents
@@ -96,4 +104,12 @@ export const API_ENDPOINTS = {
     generate: '/reports/generate',
     compliance: '/reports/compliance',
   },
-} as const; 
+} as const;
+
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token'); // O donde guardes el token
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}); 

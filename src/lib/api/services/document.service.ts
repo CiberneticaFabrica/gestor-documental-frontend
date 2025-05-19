@@ -119,4 +119,13 @@ export const documentService = {
     const { data: response } = await axiosInstance.put(`/documents/${id_documento}`, data);
     return response;
   },
+  /**
+   * Mueve un documento a otra carpeta
+   */
+  moveDocument: async (id_documento: string, id_carpeta_destino: string) => {
+    const { data } = await axiosInstance.post(`/documents/${id_documento}/move`, {
+      id_carpeta_destino
+    });
+    return data; // { message, id_documento }
+  },
 };

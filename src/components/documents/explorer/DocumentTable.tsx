@@ -293,15 +293,13 @@ export function DocumentTable({ documents, onSelect, onDocumentUpdated }: Docume
                   <td className="px-4 py-2 text-sm">
                     <div className="flex items-center gap-1">
                       <span>v{doc.version_actual}</span>
-                      {doc.version_actual > 1 && (
-                        <button
-                          className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      {/* {doc.version_actual > 1 && (
+                        <span className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                           onClick={(e) => handleViewVersions(doc.id_documento, e)}
                           title="Ver versiones"
                         >
                           ({doc.version_actual > 1 ? `${doc.version_actual} versiones` : '1 versión'})
-                        </button>
-                      )}
+                      )} */}
                     </div>
                   </td>
                   <td className="px-4 py-2 text-sm">

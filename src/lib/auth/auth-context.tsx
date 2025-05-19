@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(response.user);
         }
       } catch (fetchError) {
-        console.error('[Auth] Error al obtener perfil, intentando modo offline:', fetchError);
+        //console.error('[Auth] Error al obtener perfil, intentando modo offline:', fetchError);
         
         // IMPORTANTE: Modo offline/fallback
         // Si no podemos conectar a la API pero tenemos un token válido,
@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Guardar datos del usuario en localStorage para uso offline
         localStorage.setItem('user_data', JSON.stringify(userData));
       } catch (profileError) {
-        console.error('[Auth] Error al obtener perfil completo:', profileError);
+        console.error('[Auth]  completo:', profileError);
         
         // Si no podemos obtener el perfil, crear un objeto de usuario básico con la información disponible
         userData = {

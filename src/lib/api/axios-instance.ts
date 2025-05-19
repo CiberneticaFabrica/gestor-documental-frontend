@@ -42,7 +42,7 @@ axiosInstance.interceptors.response.use(
 
     // Si el error es de red
     if (error.code === 'ERR_NETWORK') {
-      console.error('Network error:', error);
+     // console.error('Network error:', error);
       return Promise.reject({
         message: 'Error de conexión. Por favor, verifica tu conexión a internet y que la API esté disponible.',
         originalError: error
@@ -85,7 +85,7 @@ axiosInstance.interceptors.response.use(
 
     // Si el error es de red
     if (error.code === 'ERR_NETWORK') {
-      console.error('Network error:', error);
+      //console.error('Network error:', error);
       return Promise.reject({
         message: 'Error de conexión. Por favor, verifica tu conexión a internet y que la API esté disponible.',
         originalError: error

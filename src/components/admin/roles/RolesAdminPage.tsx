@@ -7,21 +7,15 @@ import { PermissionsByModulePanel } from './PermissionsByModulePanel';
 import { RolePermissionsPanel } from './RolePermissionsPanel';
 import { useRoles } from '@/hooks/useRoles';
 import { toast } from 'sonner';
-import { Role as APIRole } from '@/services/common/roleService';
+import { Role } from '@/services/common/roleService';
 import { RoleFiltersBar } from './RoleFiltersBar';
 import { RoleListCards } from './RoleListCards';
-
-export interface Role extends APIRole {
-  permissions?: string[];
-}
 
 export default function RolesAdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [viewingPermissionsRoleId, setViewingPermissionsRoleId] = useState<string | null>(null);
-  const { roles, loading, error, refresh } = useRoles();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const { roles, loading, error, refresh, pagination, fetchRoles } = useRoles();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
@@ -31,18 +25,13 @@ export default function RolesAdminPage() {
     (role.descripcion?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
-  const total = filteredRoles.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const paginatedRoles = filteredRoles.slice((page - 1) * pageSize, page * pageSize);
-
-  const handlePageChange = (p: number) => {
-    setPage(p);
+  const handlePageChange = (newPage: number) => {
+    fetchRoles(newPage, pagination.page_size);
   };
 
   const handleRoleCreated = () => {
     setShowForm(false);
     refresh();
-    setPage(1);
   };
 
   const handleRoleDeleted = () => {
@@ -69,7 +58,7 @@ export default function RolesAdminPage() {
       </div>
       <RoleFiltersBar
         search={search}
-        onSearchChange={v => { setSearch(v); setPage(1); }}
+        onSearchChange={v => { setSearch(v); fetchRoles(1, pagination.page_size); }}
         onAddRole={() => setShowForm(true)}
         onExport={handleExport}
         viewMode={viewMode}
@@ -79,19 +68,19 @@ export default function RolesAdminPage() {
         <div className="text-white">Cargando roles...</div>
       ) : viewMode === 'table' ? (
         <RoleListTable 
-          roles={paginatedRoles} 
+          roles={filteredRoles} 
           onSelect={setSelectedRole} 
           onDelete={handleRoleDeleted}
           onViewPermissions={setViewingPermissionsRoleId}
-          page={page}
-          pageSize={pageSize}
-          total={total}
-          totalPages={totalPages}
+          page={pagination.page}
+          pageSize={pagination.page_size}
+          total={pagination.total}
+          totalPages={pagination.total_pages}
           onPageChange={handlePageChange}
         />
       ) : (
         <RoleListCards
-          roles={paginatedRoles}
+          roles={filteredRoles}
           onSelect={setSelectedRole} 
           onDelete={handleRoleDeleted}
           onViewPermissions={setViewingPermissionsRoleId}

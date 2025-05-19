@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "./UsersAdminPage";
 import { UserFilters } from "./UserFilters";
+import { toast } from 'sonner';
 
 interface UserListTableProps {
   users: User[];
@@ -217,11 +218,68 @@ export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatu
                             {user.estado === 'activo' ? 'Desactivar' : 'Activar'}
                           </span>
                         </button>
+                        {user.estado === 'activo' && (
                         <button
                           className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDelete(user);
+                              toast.promise(
+                                new Promise((resolve, reject) => {
+                                  toast.custom((t) => (
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-sm w-full">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Confirmar eliminación</h3>
+                                        <button
+                                          onClick={() => {
+                                            toast.dismiss(t);
+                                            reject();
+                                          }}
+                                          className="text-gray-400 hover:text-gray-500"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                      <p className="text-gray-600 dark:text-gray-300 mb-4">
+                                        ¿Está seguro que desea eliminar este usuario? Esta acción no se puede deshacer.
+                                      </p>
+                                      <div className="flex justify-end gap-2">
+                                        <button
+                                          onClick={() => {
+                                            toast.dismiss(t);
+                                            reject();
+                                          }}
+                                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                        >
+                                          Cancelar
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            try {
+                                              await onDelete(user);
+                                              toast.dismiss(t);
+                                              toast.success("Usuario eliminado exitosamente");
+                                              resolve(true);
+                                            } catch (error) {
+                                              toast.error("Error al eliminar el usuario");
+                                              reject(error);
+                                            }
+                                          }}
+                                          className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+                                        >
+                                          Eliminar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ), {
+                                    duration: Infinity,
+                                  });
+                                }),
+                                {
+                                  loading: 'Eliminando usuario...',
+                                  success: 'Usuario eliminado exitosamente',
+                                  error: 'Error al eliminar el usuario'
+                                }
+                              );
                           }}
                         >
                           <span className="flex items-center">
@@ -231,6 +289,7 @@ export function UserListTable({ users, onSelect, onEdit, onDelete, onToggleStatu
                             Eliminar
                           </span>
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>

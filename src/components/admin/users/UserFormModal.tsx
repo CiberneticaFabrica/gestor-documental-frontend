@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, FormEvent } from "react";
-import { fetchRoles, type Role } from "@/services/common/roleService";
+import { roleService, type Role } from "@/services/common/roleService";
 import axios from "axios";
 import { toast } from "sonner";
+import { userService } from "@/services/common/userService";
 
 interface UserFormData {
   nombre_usuario: string;
@@ -34,25 +35,16 @@ export function UserFormModal({
   });
 
   useEffect(() => {
-    fetchRoles()
-      .then(setRoles)
+    roleService.getRoles()
+      .then(response => setRoles(response.roles))
       .finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("session_token");
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/users`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.data.user_id) {
+      const response = await userService.createUser(formData);
+      if (response.user_id) {
         toast.success("Usuario creado exitosamente");
         onUserCreated();
         onClose();

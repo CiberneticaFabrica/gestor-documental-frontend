@@ -46,6 +46,11 @@ const adminMenu = [
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
+const auditMenu = [
+  { name: 'Auditoría General', href: '/audits/general', icon: FileText },
+  { name: 'Auditoría Seguridad', href: '/audits/seguridad', icon: Shield },
+];
+
 interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -59,6 +64,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const { theme } = useTheme();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
   useEffect(() => {
@@ -213,9 +219,57 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     label={item.name}
                     active={pathname === item.href}
                     minimized={minimized}
-                     
                   />
                 ))}
+              </div>
+            </div>
+
+            {/* AUDITORÍA */}
+            <div>
+              <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
+                {minimized ? <span className="text-lg">…</span> : "AUDITORÍA"}
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className={cn(
+                    'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
+                    pathname.startsWith('/audit') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50',
+                    minimized ? 'justify-center' : ''
+                  )}
+                  onClick={() => {
+                    setMinimized(false);
+                    setAuditOpen((open) => !open);
+                  }}
+                  aria-expanded="false"
+                  title={minimized ? "Auditoría" : undefined}
+                >
+                  <Shield className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', pathname.startsWith('/audit') ? 'text-primary-foreground' : ' text-gray-400')} />
+                  {!minimized && <span>Auditoría</span>}
+                  {!minimized && (
+                    <svg className={cn('ml-auto h-4 w-4 transition-transform', auditOpen ? 'rotate-90' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+                {auditOpen && !minimized && (
+                  <div className="ml-8 mt-1 space-y-1 relative">
+                    {/* Línea vertical */}
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100 text-sm" />
+                    {auditMenu.map((sub) => (
+                      <SidebarLink
+                        key={sub.name}
+                        icon={sub.icon}
+                        href={sub.href}
+                        label={sub.name}
+                        active={pathname === sub.href}
+                        small
+                        showDot={pathname === sub.href}
+                        minimized={minimized}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </nav>

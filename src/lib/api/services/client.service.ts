@@ -153,7 +153,7 @@ export interface DocumentRequestsResponse {
 }
 
 export const clientService = {
-  baseUrl: '/api',
+   
   getClients: async (page: number = 1, pageSize: number = 10) => {
     const { data } = await axiosInstance.get<ClientsResponse>(`/clients?page=${page}&page_size=${pageSize}`);
     return data;

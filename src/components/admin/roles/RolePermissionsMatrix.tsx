@@ -1,13 +1,8 @@
-import { Role } from './RolesAdminPage';
+import { Role, roleService } from '@/services/common/roleService';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-
-interface Permission {
-  id_permiso: string;
-  codigo_permiso: string;
-  descripcion: string;
-  categoria: string;
-}
+import { fetchPermissions, type Permission } from '@/services/common/permissionService';
+import type { RolePermissionsResponse } from '@/services/common/roleService';
 
 export function RolePermissionsMatrix({ role, onClose }: { role: Role; onClose: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -17,44 +12,36 @@ export function RolePermissionsMatrix({ role, onClose }: { role: Role; onClose: 
     nombre_rol: role.nombre_rol,
     descripcion: role.descripcion || ''
   });
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('');
 
   useEffect(() => {
-    const fetchPermissions = async () => {
+    const loadAllPermissions = async () => {
       try {
-        const token = localStorage.getItem("session_token");
-        if (!token) {
-          throw new Error("No hay token de sesión");
-        }
-
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod";
-        const response = await fetch(
-          `${baseUrl}/permissions`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
+        setLoadingPermissions(true);
+        const response = await fetchPermissions();
+        let allPermissions = [...response.permisos];
+        if (response.pagination.total_pages > 1) {
+          for (let page = 2; page <= response.pagination.total_pages; page++) {
+            const nextPage = await fetchPermissions(page, 1000);
+            allPermissions.push(...nextPage.permisos);
           }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
         }
-
-        const data = await response.json();
-        console.log('Permisos recibidos:', data); // Para debug
-        
-        // Agrupar permisos por categoría
-        const groupedPermissions = data.reduce((acc: Record<string, Permission[]>, perm: Permission) => {
+        const groupedPermissions = allPermissions.reduce((acc: Record<string, Permission[]>, perm: Permission) => {
           if (!acc[perm.categoria]) {
             acc[perm.categoria] = [];
           }
           acc[perm.categoria].push(perm);
           return acc;
         }, {});
-        
-        console.log('Permisos agrupados:', groupedPermissions); // Para debug
         setPermissions(groupedPermissions);
+        // Set first category as active
+        const categories = Object.keys(groupedPermissions);
+        if (categories.length > 0) setActiveCategory(categories[0]);
+        // Precargar permisos actuales del rol
+        const rolePermsResp = await roleService.getRolePermissions(role.id_rol);
+        const currentPerms = rolePermsResp.permisos || [];
+        setSelectedPermissions(currentPerms.map(p => p.id_permiso));
       } catch (error) {
         console.error("Error al cargar los permisos:", error);
         toast.error(error instanceof Error ? error.message : "Error al cargar los permisos");
@@ -62,34 +49,28 @@ export function RolePermissionsMatrix({ role, onClose }: { role: Role; onClose: 
         setLoadingPermissions(false);
       }
     };
+    loadAllPermissions();
+  }, [role.id_rol]);
 
-    fetchPermissions();
-  }, []);
+  const handlePermissionChange = (permissionId: string) => {
+    setSelectedPermissions(prev =>
+      prev.includes(permissionId)
+        ? prev.filter(id => id !== permissionId)
+        : [...prev, permissionId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const token = localStorage.getItem("session_token");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/roles/${role.id_rol}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!response.ok) throw new Error('Error al actualizar el rol');
-      
+      await roleService.updateRole(role.id_rol, formData);
+      await roleService.updateRolePermissions(role.id_rol, selectedPermissions);
       toast.success("Rol actualizado exitosamente");
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al actualizar el rol:", error);
-      toast.error("Error al actualizar el rol");
+      toast.error(error.response?.data?.error || "Error al actualizar el rol");
     } finally {
       setLoading(false);
     }
@@ -140,22 +121,46 @@ export function RolePermissionsMatrix({ role, onClose }: { role: Role; onClose: 
             {loadingPermissions ? (
               <div className="text-gray-500 dark:text-gray-400">Cargando permisos...</div>
             ) : (
-              <div className="space-y-4">
-                {Object.entries(permissions).map(([category, perms]) => (
-                  <div key={category} className="border dark:border-gray-700 rounded-lg p-4">
-                    <h4 className="font-medium mb-3 text-gray-900 dark:text-white capitalize">{category}</h4>
-                    <div className="space-y-2">
-                      {perms.map((permission) => (
-                        <div key={permission.id_permiso} className="flex items-start space-x-3">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{permission.descripcion}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{permission.codigo_permiso}</p>
-                          </div>
-                        </div>
+              <div className="space-y-6">
+                {/* Tabs de categorías */}
+                <div className="border-b border-gray-200 dark:border-gray-700 mb-2">
+                  <nav className="flex space-x-4" aria-label="Tabs">
+                    {Object.keys(permissions).map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setActiveCategory(category)}
+                        className={`px-3 py-2 text-sm font-medium rounded-t-lg ${
+                          activeCategory === category
+                            ? 'bg-blue-500 text-white'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+                {/* Contenido de la categoría activa */}
+                {activeCategory && permissions[activeCategory] && (
+                  <div className="border dark:border-gray-700 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {permissions[activeCategory].map((permission) => (
+                        <label key={permission.id_permiso} className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedPermissions.includes(permission.id_permiso)}
+                            onChange={() => handlePermissionChange(permission.id_permiso)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {permission.descripcion}
+                          </span>
+                        </label>
                       ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

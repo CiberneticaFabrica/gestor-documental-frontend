@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { clientService, ClientRequest } from '@/lib/api/services/client.service';
+import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 interface NewClientFormProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface NewClientFormProps {
 
 export function NewClientForm({ isOpen, onClose, onSuccess }: NewClientFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<ClientRequest>({
     tipo_cliente: 'persona_fisica',
     nombre_razon_social: '',
@@ -44,17 +47,31 @@ export function NewClientForm({ isOpen, onClose, onSuccess }: NewClientFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null); // Reset error message on new submission
+    
     try {
       await clientService.createClient(formData);
+      toast.success('Cliente creado exitosamente');
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating client:', error);
-      if (error instanceof Error) {
-        console.error('Error details:', error.message);
-      }
-      if (error && typeof error === 'object' && 'response' in error) {
-        console.error('API Response:', error.response);
+      // Manejo específico de errores de la API
+      if (error?.originalError?.originalError?.response?.data?.error) {
+        const errorMessage = error.originalError.originalError.response.data.error;
+        setErrorMessage(errorMessage);
+        toast.error(errorMessage);
+      } else if (error?.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+        setErrorMessage(errorMessage);
+        toast.error(errorMessage);
+      } else if (error?.message) {
+        setErrorMessage(error.message);
+        toast.error(error.message);
+      } else {
+        const defaultError = 'Error al crear el cliente';
+        setErrorMessage(defaultError);
+        toast.error(defaultError);
       }
     } finally {
       setIsLoading(false);
@@ -82,6 +99,14 @@ export function NewClientForm({ isOpen, onClose, onSuccess }: NewClientFormProps
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Nuevo Cliente</DialogTitle>
+          {errorMessage && (
+            <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertCircle className="h-4 w-4" />
+                <p className="text-sm font-medium">{errorMessage}</p>
+              </div>
+            </div>
+          )}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-3 gap-4">

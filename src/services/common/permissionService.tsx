@@ -1,4 +1,5 @@
-import axios from "axios";
+import { BaseService } from '@/lib/api/base-service';
+import { API_ENDPOINTS } from '@/lib/api/config';
 
 export interface Permission {
   id_permiso: string;
@@ -18,15 +19,21 @@ export interface PermissionsResponse {
   };
 }
 
-export async function fetchPermissions(): Promise<PermissionsResponse> {
-  const token = localStorage.getItem("session_token");
-  const res = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/permissions`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-  return res.data;
+class PermissionService extends BaseService {
+  async getPermissions(page: number = 1, pageSize: number = 1000): Promise<PermissionsResponse> {
+    console.log('Fetching permissions with pageSize:', pageSize);
+    const response = await this.get<PermissionsResponse>(API_ENDPOINTS.permissions.list, {
+      page,
+      page_size: pageSize,
+      include_all: true
+    });
+    console.log('Permissions response:', response);
+    return response;
+  }
+}
+
+export const permissionService = new PermissionService();
+
+export async function fetchPermissions(page: number = 1, pageSize: number = 1000): Promise<PermissionsResponse> {
+  return permissionService.getPermissions(page, pageSize);
 } 

@@ -1,5 +1,16 @@
-import axios from "axios";
-import type { User } from "./UsersAdminPage";
+import { BaseService } from '@/lib/api/base-service';
+import { API_ENDPOINTS } from '@/lib/api/config';
+
+export interface User {
+  id_usuario: string;
+  nombre_usuario: string;
+  nombre: string;
+  apellidos: string;
+  email: string;
+  estado: string;
+  roles: Array<{ id_rol: string; nombre_rol: string }>;
+  ultimo_acceso: string | null;
+}
 
 export interface Pagination {
   total: number;
@@ -13,24 +24,19 @@ export interface FetchUsersResult {
   pagination: Pagination;
 }
 
+class UserService extends BaseService {
+  async getUsers(page = 1, pageSize = 10): Promise<FetchUsersResult> {
+    return this.get<FetchUsersResult>(API_ENDPOINTS.users.list, {
+      page,
+      page_size: pageSize
+    });
+  }
+}
+
+const userService = new UserService();
+
 export async function fetchUsers(page = 1, pageSize = 10): Promise<FetchUsersResult> {
-  const token = localStorage.getItem("session_token");
-  const res = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/users`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: {
-        page,
-        page_size: pageSize,
-      },
-    }
-  );
-  return {
-    users: res.data.users,
-    pagination: res.data.pagination,
-  };
+  return userService.getUsers(page, pageSize);
 }
 
 export interface UserResponse {

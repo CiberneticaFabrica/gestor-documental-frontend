@@ -1,16 +1,38 @@
 "use client";
 
 import {
-   Briefcase, CheckCircle2, AlertTriangle, CalendarCheck, UserCheck, ShieldCheck, FileText, Activity, ClipboardList, BarChart2, MessageSquare, Link2
+  Briefcase, CheckCircle2, AlertTriangle, CalendarCheck, UserCheck, ShieldCheck, FileText, Activity, 
+  ClipboardList, BarChart2, MessageSquare, Link2, Clock, AlertCircle, Mail, Phone, MapPin, Globe,
+  Building2, UserCog, FileCheck, FileX, FileClock, FileWarning,
+  Loader2
 } from 'lucide-react';
-import { type ClientDetailResponse } from '@/lib/api/services/client.service';
+
+import { type ClientDetailResponse , type DocumentRequestsResponse } from '@/lib/api/services/client.service';
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { ResponsiveContainer } from 'recharts';
+import { useParams } from 'next/navigation';
+import { clientService } from '@/lib/api/services/client.service';
+import { PieChart, Pie, Cell } from 'recharts';
 
 interface UserGeneralInfoTabProps {
   clientData: ClientDetailResponse;
+  documentRequests?: DocumentRequestsResponse;
 }
 
-export function UserGeneralInfoTab({ clientData }: UserGeneralInfoTabProps) {
+export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneralInfoTabProps) {
   const { cliente, estadisticas, actividad_reciente, vista_cache } = clientData;
+  const params = useParams();
+  const [data, setData] = useState<DocumentRequestsResponse | null>(null);
+  const [tablaVista, setTablaVista] = useState<'pendientes' | 'recibidos'>('pendientes');
+
+  const solicitudes = (data?.solicitudes || documentRequests?.solicitudes) || [];
+
+  console.log('documentRequests:', documentRequests);
+  console.log('solicitudes:', solicitudes);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -25,155 +47,368 @@ export function UserGeneralInfoTab({ clientData }: UserGeneralInfoTabProps) {
     }
   };
 
-  const docChecklist = [
-    { label: 'Identificación', status: cliente.documento_identificacion ? 'ok' : 'pending' },
-    { label: 'Domicilio', status: cliente.datos_contacto.direccion ? 'ok' : 'pending' },
-    { label: 'Email', status: cliente.datos_contacto.email ? 'ok' : 'pending' },
-    { label: 'Teléfono', status: cliente.datos_contacto.telefono ? 'ok' : 'pending' },
+  const getRiskColor = (risk: string) => {
+    switch (risk.toLowerCase()) {
+      case 'bajo':
+        return 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+      case 'medio':
+        return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300';
+      case 'alto':
+        return 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+      default:
+        return 'bg-gray-50 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300';
+    }
+  };
+
+  const calculateDocumentProgress = () => {
+    const total = estadisticas.solicitudes.total_requests;
+    const received = parseInt(estadisticas.solicitudes.received_requests);
+    return total > 0 ? (received / total) * 100 : 0;
+  };
+
+  const donutData = [
+    { name: 'Pendientes', value: parseInt(estadisticas.solicitudes.pending_requests), color: '#3B82F6' }, // azul
+    { name: 'Recibidos', value: parseInt(estadisticas.solicitudes.received_requests), color: '#10B981' }, // verde
+    { name: 'Vencidos', value: parseInt(estadisticas.solicitudes.overdue_requests), color: '#EF4444' }, // rojo
+    
   ];
+  const total = donutData.reduce((acc, d) => acc + d.value, 0);
 
-  const docEvents = actividad_reciente.map(actividad => ({
-    label: actividad.accion === 'crear' ? 'Cliente creado' : actividad.accion,
-    date: new Date(actividad.fecha_hora).toLocaleDateString('es-ES')
-  }));
-
-  const requiredDocs = cliente.documentos_pendientes.map(doc => ({
-    label: `Documento pendiente`,
-    status: 'faltante',
-    date: new Date(doc.fecha_solicitud).toLocaleDateString('es-ES')
-  }));
-
-  const kpis = [
-    { label: 'Documentos completos', value: vista_cache.kpis_cliente.documentos_completos },
-    { label: 'Documentos pendientes', value: vista_cache.kpis_cliente.documentos_pendientes },
-    { label: 'Días hasta próxima revisión', value: vista_cache.kpis_cliente.dias_hasta_proxima_revision },
-  ];
-
-  const compliance = ['FATCA', 'PBC', 'AML'];
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await clientService.getClientDocumentRequests(params.id as string);
+      setData(response);
+    };
+    fetchData();
+  }, [params.id]);
 
   return (
-    <>
-      {/* Header corporativo compacto */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-6 bg-gradient-to-r from-blue-900 to-blue-700 rounded-t-xl">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-blue-400 flex items-center justify-center text-white text-2xl font-bold border-4 border-blue-300 shadow">
-            {cliente.nombre_razon_social.charAt(0)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl font-bold text-white">{cliente.nombre_razon_social}</span>
-              <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getStatusColor(cliente.estado)}`}>
-                {cliente.estado}
-              </span>
+    <div className="space-y-6">
+      {/* Header con información principal */}
+      <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-xl p-6 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-20 w-20 rounded-full bg-blue-400 flex items-center justify-center text-white text-3xl font-bold border-4 border-blue-300 shadow">
+              {cliente.nombre_razon_social.charAt(0)}
             </div>
-            <div className="text-blue-100 text-sm font-mono">{cliente.tipo_cliente} &bull; ID: {cliente.documento_identificacion}</div>
-            {/* <div className="text-blue-100 text-sm font-mono">Segmento: {cliente.segmento}</div> */}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[16px] text-blue-100 mt-4 md:mt-0">
-          <div className="flex items-center gap-2"><CalendarCheck className="h-4 w-4" />Inicio: <span className="font-semibold text-white">{cliente.fecha_alta}</span></div>
-          <div className="flex items-center gap-2"><UserCheck className="h-4 w-4" />Gestor: <span className="font-semibold text-white">{cliente.gestor_principal_nombre}</span></div>
-          <div className="flex items-center gap-2"><Briefcase className="h-4 w-4" />Segmento: <span className="font-semibold text-white">{cliente.segmento_bancario}</span></div>
-          <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Riesgo: <span className="font-semibold text-white">{cliente.nivel_riesgo}</span></div>
-        </div>
-      </div>
-
-      {/* Grid de cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-        {/* Completitud documental */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <ClipboardList className="h-4 w-4" /> Completitud documental
-          </div>
-          {docChecklist.map((doc, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              {doc.status === 'ok' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-              {doc.status === 'pending' && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
-              {doc.status === 'fail' && <AlertTriangle className="h-4 w-4 text-red-500" />}
-              <span>{doc.label}</span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-2xl font-bold">{cliente.nombre_razon_social}</h1>
+                <Badge variant="outline" className={getStatusColor(cliente.estado)}>
+                  {cliente.estado}
+                </Badge>
+              </div>
+              <div className="text-blue-100 text-sm font-mono">
+                {cliente.tipo_cliente} &bull; ID: {cliente.codigo_cliente}
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Actividad documental */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <Activity className="h-4 w-4" /> Actividad documental
           </div>
-          {docEvents.map((ev, i) => (
-            <div key={i} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-              <span>{ev.label}</span>
-              <span className="text-gray-500 dark:text-gray-400">{ev.date}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Documentos requeridos */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <FileText className="h-4 w-4" /> Documentos requeridos
-          </div>
-          {requiredDocs.map((doc, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              {doc.status === 'ok' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-              {doc.status === 'faltante' && <AlertTriangle className="h-4 w-4 text-red-500" />}
-              <span>{doc.label}</span>
-              {doc.date && <span className="ml-auto text-gray-500 dark:text-gray-400">{doc.date}</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Indicadores */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <BarChart2 className="h-4 w-4" /> Indicadores
-          </div>
-          {kpis.map((kpi, i) => (
-            <div key={i} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-              <span>{kpi.label}</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{kpi.value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Riesgos y cumplimiento */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <ShieldCheck className="h-4 w-4" /> Riesgos y cumplimiento
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {compliance.map((c, i) => (
-              <span key={i} className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                {c}
-              </span>
-            ))}
-            <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-              {cliente.nivel_riesgo}
-            </span>
-          </div>
-        </div>
-
-        {/* Metadatos personalizados */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex flex-col gap-2 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            <Briefcase className="h-4 w-4" /> Información adicional
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between text-gray-700 dark:text-gray-300">
-              <span className="text-gray-500 dark:text-gray-400">Profesión</span>
-              <span>{cliente.metadata_personalizada.profesion || 'No especificada'}</span>
-            </div>
-            <div className="flex justify-between text-gray-700 dark:text-gray-300">
-              <span className="text-gray-500 dark:text-gray-400">Referido por</span>
-              <span>{cliente.metadata_personalizada.referido_por || 'No especificado'}</span>
-            </div>
-            <div className="flex justify-between text-gray-700 dark:text-gray-300">
-              <span className="text-gray-500 dark:text-gray-400">Empresa laboral</span>
-              <span>{cliente.metadata_personalizada.empresa_laboral || 'No especificada'}</span>
-            </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+              <UserCog className="w-4 h-4 mr-2" />
+              Editar Cliente
+            </Button>
+            <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+              <FileText className="w-4 h-4 mr-2" />
+              Solicitar Documento
+            </Button>
           </div>
         </div>
       </div>
-    </>
+
+      {/* Grid de información principal */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Columna 1 - Información básica */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Información Básica
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Building2 className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500">Tipo de Cliente:</span>
+                <span className="font-medium">{cliente.tipo_cliente}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <FileText className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500">Documento:</span>
+                <span className="font-medium">{cliente.documento_identificacion}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500">Segmento:</span>
+                <span className="font-medium">{cliente.segmento_bancario}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <UserCheck className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500">Gestor:</span>
+                <span className="font-medium">{cliente.gestor_principal_nombre}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Columna 2 - Estado Documental */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileCheck className="w-5 h-5" />
+              Estado documental
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center text-sm">
+              <span>Completitud documental</span>
+              <span className="font-medium">{calculateDocumentProgress().toFixed(0)}%</span>
+            </div>
+            <div className="w-full">
+              <div className="h-2 rounded-full bg-gray-100 relative overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-red-500 transition-all"
+                  style={{ width: `${calculateDocumentProgress()}%` }}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+              <div className="flex items-center bg-blue-50 rounded-lg p-4 min-h-[70px]">
+                <FileCheck className="w-6 h-6 text-blue-500 mr-3" />
+                <div>
+                  <div className="text-xs text-blue-900">Documentos recibidos</div>
+                  <div className="text-xl font-bold text-blue-900">{estadisticas.solicitudes.received_requests}</div>
+                </div>
+              </div>
+              <div className="flex items-center bg-yellow-50 rounded-lg p-4 min-h-[70px]">
+                <FileClock className="w-6 h-6 text-yellow-600 mr-3" />
+                <div>
+                  <div className="text-xs text-yellow-900">Documentos pendientes</div>
+                  <div className="text-xl font-bold text-yellow-900">{estadisticas.solicitudes.pending_requests}</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Estadísticas y Estado General */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart2 className="w-5 h-5" />
+              Estado General
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-8">
+              {/* Donut chart */}
+              <div className="relative w-40 h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      stroke="none"
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                    >
+                      {donutData.map((entry, idx) => (
+                        <Cell key={`cell-${idx}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Total in center */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-bold">{total}</span>
+                  <span className="text-xs text-gray-500"> Documentos</span>
+                </div>
+              </div>
+              {/* Legend */}
+              <div className="flex flex-col gap-2">
+                {donutData.map((entry, idx) => (
+                  <div key={entry.name} className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                    <span className="text-sm text-gray-700 dark:text-gray-200">{entry.name}</span>
+                    <span className="ml-2 text-sm font-semibold">{entry.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  {/* Fila 1, Col 1: Información de contacto */}
+  <Card className="md:col-span-1">
+    {/* ...contenido... */}
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Información de Contacto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">{cliente.datos_contacto.email}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">{cliente.datos_contacto.telefono}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">{cliente.datos_contacto.direccion}</span>
+              </div>
+            </div>
+          </CardContent>
+  </Card>
+  {/* Fila 1, Col 2: Preferencias de comunicación */}
+  <Card className="md:col-span-1">
+    {/* ...contenido... */}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Preferencias de Comunicación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Canal: {cliente.preferencias_comunicacion.canal_preferido}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Horario: {cliente.preferencias_comunicacion.horario_preferido}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-500" />
+                <span className="text-sm">Idioma: {cliente.preferencias_comunicacion.idioma}</span>
+              </div>
+            </div>
+          </CardContent>
+  </Card>
+  {/* Fila 1 y 2, Col 3: Actividad reciente */}
+  <Card className="md:col-span-1 md:row-span-2 h-full">
+    {/* ...contenido... */}
+       <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Actividad Reciente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {actividad_reciente.slice(0, 5).map((actividad, index) => (
+                <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Activity className="w-4 h-4 text-blue-500" />
+                  <div>
+                    <div className="text-sm font-medium">{actividad.accion}</div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(actividad.fecha_hora).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+  </Card>
+  {/* Fila 2, Col 1 y 2: Documentos (toggle) */}
+  <div className="md:col-span-2">
+    {/* ...toggle y tabla... */}
+        
+          {/* Toggle de vista */}
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              className={`flex items-center gap-2 px-3 py-1 rounded transition-colors text-sm font-semibold border ${tablaVista === 'pendientes' ? 'bg-yellow-100 text-yellow-800 border-yellow-400' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
+              onClick={() => setTablaVista('pendientes')}
+            >
+              <Loader2 className="h-5 w-5 text-yellow-500" /> Pendientes
+            </button>
+            <button
+              className={`flex items-center gap-2 px-3 py-1 rounded transition-colors text-sm font-semibold border ${tablaVista === 'recibidos' ? 'bg-green-100 text-green-800 border-green-400' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
+              onClick={() => setTablaVista('recibidos')}
+            >
+              <CheckCircle2 className="h-5 w-5 text-green-500" /> Recibidos
+            </button>
+          </div>
+
+          {/* Tabla única */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+            <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+              {tablaVista === 'pendientes' ? (
+                <Loader2 className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              )}
+              {tablaVista === 'pendientes' ? 'Documentos Pendientes' : 'Documentos Recibidos'}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                    <th className="py-3 font-medium text-left">Documento</th>
+                    <th className="py-3 font-medium text-left">{tablaVista === 'pendientes' ? 'Solicitado' : 'Fecha Recepción'}</th>
+                    <th className="py-3 font-medium text-left">Fecha Límite</th>
+                    <th className="py-3 font-medium text-left">Días Restantes</th>
+                    <th className="py-3 font-medium text-left">Notas</th>
+                  
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {solicitudes
+                    .filter(doc => tablaVista === 'pendientes' ? doc.estado?.toLowerCase() === 'pendiente' : doc.estado === 'recibido')
+                    .map((doc) => (
+                      <tr key={doc.id_solicitud} className="text-gray-700 dark:text-gray-300">
+                        <td className="py-3 font-medium">{doc.tipo_documento_nombre}</td>
+                        <td className="py-3">{new Date(doc.fecha_solicitud).toLocaleDateString()}</td>
+                        <td className="py-3">{new Date(doc.fecha_limite).toLocaleDateString()}</td>
+                        <td className="py-3">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                            doc.dias_restantes <= 7
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300'
+                              : doc.dias_restantes <= 30
+                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
+                          }`}>
+                            {doc.dias_restantes} días
+                          </span>
+                        </td>
+                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400">{doc.notas}</td>
+                       
+                      </tr>
+                    ))}
+                  {solicitudes.filter(doc => tablaVista === 'pendientes' ? doc.estado?.toLowerCase() === 'pendiente' : doc.estado === 'recibido').length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center text-gray-400 py-4">
+                        No hay datos para mostrar. Verifica la fuente de datos.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+         
+  </div>
+</div>
+ 
+
+   
+
+     
+    </div>
+
+    
   );
 } 

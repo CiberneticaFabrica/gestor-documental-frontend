@@ -1,5 +1,6 @@
 import axiosInstance from './axios-instance';
 import { API_ENDPOINTS } from './config';
+import { auditoriaService, AuditLog, AuditLogsResponse } from '@/lib/api/services/auditoria.service';
 
 export interface PaginationParams {
   page?: number;
@@ -96,7 +97,7 @@ export class BaseService {
   }
 
   protected handleError(error: any): never {
-    console.error('API Error:', error);
+    //console.error('API Error:', error);
     
     // Si el error ya fue procesado por el interceptor
     if (error.message && error.originalError) {

@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from 'recharts';
-import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle } from 'lucide-react';
+import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle, Upload } from 'lucide-react';
 import { clientService, type DocumentRequestsResponse } from '@/lib/api/services/client.service';
 import { useParams } from 'next/navigation';
+import { DocumentUpload } from '@/components/documents/upload/DocumentUploadPage';
+import { Modal } from '@/components/ui/modal';
+import { documentService } from '@/lib/api/services/document.service';
+import { toast } from 'sonner';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E42', '#EF4444'];
 
@@ -11,6 +15,9 @@ export function UserDocumentsTab() {
   const [data, setData] = useState<DocumentRequestsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,8 +63,30 @@ export function UserDocumentsTab() {
     { name: 'Cancelados', value: parseInt(estadisticas.cancelados) },
   ];
 
+  const handleUploadNewVersion = (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDocId(docId);
+    setShowUploadModal(true);
+  };
+
+  const handleUploadNewDocument = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDocId(null);
+    setShowUploadModal(true);
+  };
+
   return (
     <div className="space-y-8">
+      <div className="flex justify-end">
+        <button
+          onClick={handleUploadNewDocument}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          <Upload className="h-4 w-4" />
+          Subir nuevo documento
+        </button>
+      </div>
+
       {/* Resumen de estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
@@ -142,10 +171,14 @@ export function UserDocumentsTab() {
                         </td>
                         <td className="py-3 text-sm text-gray-500 dark:text-gray-400">{doc.notas}</td>
                         <td className="py-3">
-                          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-blue-500 text-white text-sm hover:bg-blue-600 transition">
-                            <UploadCloud className="h-4 w-4" />
-                            Cargar
-                          </button>
+                        <button 
+                        onClick={(e) => handleUploadNewVersion(doc.id_documento_recibido || '', e)}
+                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                        title="Subir nueva versión"
+                      >
+                        <Upload className="h-4 w-4 text-blue-500" />
+                      </button>
+                          
                         </td>
                       </tr>
                     ))}
@@ -191,8 +224,12 @@ export function UserDocumentsTab() {
                         </td>
                         <td className="py-3 text-sm text-gray-500 dark:text-gray-400">{doc.notas}</td>
                         <td className="py-3">
-                          <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                            Ver
+                        <button 
+                            onClick={(e) => handleUploadNewVersion(doc.id_documento_recibido || '', e)}
+                            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            title="Subir nueva versión"
+                          >
+                            <Upload className="h-4 w-4 text-blue-500" />
                           </button>
                         </td>
                       </tr>
@@ -232,6 +269,28 @@ export function UserDocumentsTab() {
           </div>
         </div>
       </div>
+
+      {showUploadModal && (
+        <Modal onClose={() => setShowUploadModal(false)}>
+          <DocumentUpload
+            idCliente={params.id as string}
+            idDocumento={selectedDocId || undefined}
+            onUploaded={() => {
+              setShowUploadModal(false);
+              clientService.getClientDocumentRequests(params.id as string)
+                .then(response => {
+                  setData(response);
+                  toast.success(selectedDocId ? "Nueva versión subida correctamente" : "Documento subido correctamente");
+                })
+                .catch(error => {
+                  console.error('Error al recargar datos:', error);
+                  toast.error("Error al recargar los datos");
+                });
+            }}
+            isNewVersion={!!selectedDocId}
+          />
+        </Modal>
+      )}
     </div>
   );
 } 

@@ -221,5 +221,23 @@ export const auditoriaService = {
   async exportAuditLogs(exportRequest: ExportAuditLogsRequest): Promise<AuditLog[]> {
     const { data } = await axiosInstance.post<AuditLog[]>('/audit-logs/export', exportRequest);
     return data;
+  },
+
+  // Obtener eventos de seguridad
+  async getSecurityEvents(
+    page: number = 1,
+    limit: number = 50,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any> {
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(limit),
+    };
+    if (startDate) params['start_date'] = startDate;
+    if (endDate) params['end_date'] = endDate;
+    const query = new URLSearchParams(params).toString();
+    const { data } = await axiosInstance.get(`/audit-logs/security?${query}`);
+    return data;
   }
 }; 

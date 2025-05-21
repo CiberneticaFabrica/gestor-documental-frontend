@@ -152,6 +152,39 @@ export interface DocumentRequestsResponse {
   }>;
 }
 
+export interface ClientFoldersResponse {
+  cliente: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    tipo_cliente: string;
+    segmento_bancario: string;
+    nivel_riesgo: string;
+    estado_documental: string;
+  };
+  estructura_carpetas: any[];
+  documentos_por_carpeta: Record<string, any[]>;
+  documentos_pendientes: any[];
+  categorias: any[];
+}
+
+export interface ClientActivity {
+  fecha_hora: string;
+  accion: string;
+  entidad_afectada: string;
+  id_entidad_afectada: string;
+  detalles: Record<string, any>;
+  resultado: string;
+  usuario_nombre: string;
+}
+
+export interface ClientActivityResponse {
+  client_id: string;
+  client_name: string;
+  client_code: string;
+  activities: ClientActivity[];
+}
+
 export const clientService = {
    
   getClients: async (page: number = 1, pageSize: number = 10) => {
@@ -176,6 +209,44 @@ export const clientService = {
 
   async getClientDocumentRequests(clientId: string): Promise<DocumentRequestsResponse> {
     const { data } = await axiosInstance.get<DocumentRequestsResponse>(`/clients/${clientId}/documents/requests`);
+    return data;
+  },
+
+  async getClientFolders(clientId: string): Promise<ClientFoldersResponse> {
+    const { data } = await axiosInstance.get<ClientFoldersResponse>(`/clients/${clientId}/folders`);
+    return data;
+  },
+
+  async getClientActivity(clientId: string): Promise<ClientActivityResponse> {
+    const { data } = await axiosInstance.get<ClientActivityResponse>(`/clients/${clientId}/activity`);
+    return data;
+  },
+
+  async getClientDocuments(clientId: string): Promise<{
+    cliente: {
+      id: string;
+      codigo: string;
+      nombre: string;
+    };
+    documentos: Array<{
+      id_documento: string;
+      codigo_documento: string;
+      titulo: string;
+      // ... rest of the document fields
+    }>;
+    tipos_documento_disponibles: Array<{
+      id_tipo_documento: string;
+      nombre_tipo: string;
+      descripcion: string;
+    }>;
+    pagination: {
+      total: number;
+      page: number;
+      page_size: number;
+      total_pages: number;
+    };
+  }> {
+    const { data } = await axiosInstance.get(`/clients/${clientId}/documents`);
     return data;
   }
 }; 

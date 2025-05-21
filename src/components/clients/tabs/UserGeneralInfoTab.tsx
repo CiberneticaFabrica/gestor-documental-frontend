@@ -4,10 +4,10 @@ import {
   Briefcase, CheckCircle2, AlertTriangle, CalendarCheck, UserCheck, ShieldCheck, FileText, Activity, 
   ClipboardList, BarChart2, MessageSquare, Link2, Clock, AlertCircle, Mail, Phone, MapPin, Globe,
   Building2, UserCog, FileCheck, FileX, FileClock, FileWarning,
-  Loader2
+  Loader2, PieChartIcon, Folder, ChevronDown, ChevronRight
 } from 'lucide-react';
 
-import { type ClientDetailResponse , type DocumentRequestsResponse } from '@/lib/api/services/client.service';
+import { type ClientDetailResponse, type DocumentRequestsResponse, type ClientFoldersResponse } from '@/lib/api/services/client.service';
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,17 @@ import { ResponsiveContainer } from 'recharts';
 import { useParams } from 'next/navigation';
 import { clientService } from '@/lib/api/services/client.service';
 import { PieChart, Pie, Cell } from 'recharts';
+
+// Si ClientActivity no está disponible, defínelo aquí para evitar el error de linter
+type ClientActivity = {
+  fecha_hora: string;
+  accion: string;
+  entidad_afectada: string;
+  id_entidad_afectada?: string;
+  detalles?: Record<string, any>;
+  resultado?: string;
+  usuario_nombre?: string;
+};
 
 interface UserGeneralInfoTabProps {
   clientData: ClientDetailResponse;
@@ -28,7 +39,13 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
   const params = useParams();
   const [data, setData] = useState<DocumentRequestsResponse | null>(null);
   const [tablaVista, setTablaVista] = useState<'pendientes' | 'recibidos'>('pendientes');
-
+  const [foldersData, setFoldersData] = useState<ClientFoldersResponse | null>(null);
+  const [foldersLoading, setFoldersLoading] = useState(true);
+  const [foldersError, setFoldersError] = useState<string | null>(null);
+  const [openFolders, setOpenFolders] = useState<{ [key: string]: boolean }>({});
+  const [activity, setActivity] = useState<ClientActivity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityError, setActivityError] = useState<string | null>(null);
   const solicitudes = (data?.solicitudes || documentRequests?.solicitudes) || [];
 
   console.log('documentRequests:', documentRequests);
@@ -81,6 +98,94 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
     };
     fetchData();
   }, [params.id]);
+
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        setActivityLoading(true);
+        const response = await clientService.getClientActivity(params.id as string);
+        setActivity(response.activities);
+      } catch (err) {
+        setActivityError('Error al cargar la actividad reciente');
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+    fetchActivity();
+  }, [params.id]);
+  // Cargar estructura de carpetas al montar
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        setFoldersLoading(true);
+        const response = await clientService.getClientFolders(params.id as string);
+        setFoldersData(response);
+      } catch (err) {
+        setFoldersError('Error al cargar la estructura documental');
+        console.error(err);
+      } finally {
+        setFoldersLoading(false);
+      }
+    };
+    fetchFolders();
+  }, [params.id]);
+
+  const toggleFolder = (id: string) => {
+    setOpenFolders(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const renderFolderTree = () => {
+    if (foldersLoading) return <div className="text-gray-500">Cargando estructura documental...</div>;
+    if (foldersError) return <div className="text-red-500">{foldersError}</div>;
+    if (!foldersData || !foldersData.categorias.length) return <div className="text-gray-400">No hay carpetas definidas.</div>;
+    return (
+      <div className="relative pl-6">
+        {/* Línea vertical */}
+        <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-300" style={{ zIndex: 0 }} />
+        <div className="space-y-2 relative z-10">
+          {foldersData.categorias.map((categoria: any) => {
+            const carpetaEntry = Object.values(foldersData.documentos_por_carpeta).find((c: any) => c.nombre_carpeta === categoria.nombre);
+            const documentos = carpetaEntry ? (carpetaEntry as any).documentos : [];
+            const isOpen = openFolders[categoria.id] ?? false; // Por defecto abiertas
+            return (
+              <div key={categoria.id || categoria.nombre} className="border rounded p-2 bg-gray-50">
+                <div
+                  className="flex items-center   text-blue-600 mb-1 cursor-pointer select-none"
+                  onClick={() => toggleFolder(categoria.id || categoria.nombre)}
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 mr-1 text-gray-500" />
+                  )}
+                  <Folder className="h-5 w-5 mr-2 text-yellow-500" />
+                  {categoria.nombre}
+                  <span className="ml-2 text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">{documentos.length}</span>
+                </div>
+                {isOpen && (
+                  <ul className="ml-8 list-none">
+                    {documentos.length === 0 && (
+                      <li className="text-gray-400 flex items-center">
+                        <FileText className="h-4 w-4 mr-2 text-gray-300" />
+                        Sin documentos
+                      </li>
+                    )}
+                    {documentos.map((doc: any) => (
+                      <li key={doc.id} className="text-gray-700 flex items-center">
+                        <FileText className="h-4 w-4 mr-2 text-blue-400" />
+                        <span className="font-medium">{doc.titulo}</span>
+                        <span className="text-xs text-gray-500 ml-2">({doc.tipo})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -248,158 +353,118 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
   {/* Fila 1, Col 1: Información de contacto */}
   <Card className="md:col-span-1">
-    {/* ...contenido... */}
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              Información de Contacto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">{cliente.datos_contacto.email}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">{cliente.datos_contacto.telefono}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">{cliente.datos_contacto.direccion}</span>
-              </div>
-            </div>
-          </CardContent>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Mail className="w-5 h-5" />
+        Información de Contacto
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">{cliente.datos_contacto.email}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Phone className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">{cliente.datos_contacto.telefono}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">{cliente.datos_contacto.direccion}</span>
+        </div>
+      </div>
+    </CardContent>
   </Card>
   {/* Fila 1, Col 2: Preferencias de comunicación */}
   <Card className="md:col-span-1">
-    {/* ...contenido... */}
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Preferencias de Comunicación
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">Canal: {cliente.preferencias_comunicacion.canal_preferido}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">Horario: {cliente.preferencias_comunicacion.horario_preferido}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-gray-500" />
-                <span className="text-sm">Idioma: {cliente.preferencias_comunicacion.idioma}</span>
-              </div>
-            </div>
-          </CardContent>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <MessageSquare className="w-5 h-5" />
+        Preferencias de Comunicación
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">Canal: {cliente.preferencias_comunicacion.canal_preferido}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">Horario: {cliente.preferencias_comunicacion.horario_preferido}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Globe className="w-4 h-4 text-gray-500" />
+          <span className="text-sm">Idioma: {cliente.preferencias_comunicacion.idioma}</span>
+        </div>
+      </div>
+    </CardContent>
   </Card>
   {/* Fila 1 y 2, Col 3: Actividad reciente */}
   <Card className="md:col-span-1 md:row-span-2 h-full">
-    {/* ...contenido... */}
-       <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Actividad Reciente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {actividad_reciente.slice(0, 5).map((actividad, index) => (
-                <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Activity className="w-4 h-4 text-blue-500" />
-                  <div>
-                    <div className="text-sm font-medium">{actividad.accion}</div>
-                    <div className="text-xs text-gray-500">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Activity className="w-5 h-5" />
+        Actividad Reciente
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+     
+        <div className="relative pl-6">
+          {/* Línea vertical */}
+          <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+          <ul className="space-y-6 relative z-10">
+            {activity && activity.length > 0 ? (
+              activity.slice(0, 7).map((actividad, idx) => (
+                <li key={idx} className="relative flex items-start gap-3">
+                  {/* Círculo con ícono */}
+                  <span className="absolute -left-6 top-1.5 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                    <Activity className="w-4 h-4 text-blue-500" />
+                  </span>
+                  <div className="ml-4"> {/* Separación del icono */}
+                    <div className="text-sm text-gray-800 dark:text-gray-100">
+                      <span className="font-medium">{actividad.accion}</span>
+                      {actividad.detalles?.nombre_cliente && (
+                        <> <span className="text-gray-500"> cliente </span>
+                          <span className="font-semibold text-blue-600 hover:underline cursor-pointer ml-1">
+                            {actividad.detalles.nombre_cliente}
+                          </span>
+                        </>
+                      )}
+                      {actividad.entidad_afectada && !actividad.detalles?.nombre_cliente && (
+                        <span className="text-gray-500 ml-1"> {actividad.entidad_afectada}</span>
+                      )}
+                      {actividad.resultado && (
+                        <span className="ml-2 text-xs text-gray-400">({actividad.resultado})</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {actividad.usuario_nombre && <span className="mr-2">{actividad.usuario_nombre}</span>}
                       {new Date(actividad.fecha_hora).toLocaleString()}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+                </li>
+              ))
+            ) : (
+              <li className="text-gray-400">No hay actividad reciente.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </CardContent>
   </Card>
   {/* Fila 2, Col 1 y 2: Documentos (toggle) */}
   <div className="md:col-span-2">
-    {/* ...toggle y tabla... */}
-        
-          {/* Toggle de vista */}
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              className={`flex items-center gap-2 px-3 py-1 rounded transition-colors text-sm font-semibold border ${tablaVista === 'pendientes' ? 'bg-yellow-100 text-yellow-800 border-yellow-400' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
-              onClick={() => setTablaVista('pendientes')}
-            >
-              <Loader2 className="h-5 w-5 text-yellow-500" /> Pendientes
-            </button>
-            <button
-              className={`flex items-center gap-2 px-3 py-1 rounded transition-colors text-sm font-semibold border ${tablaVista === 'recibidos' ? 'bg-green-100 text-green-800 border-green-400' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
-              onClick={() => setTablaVista('recibidos')}
-            >
-              <CheckCircle2 className="h-5 w-5 text-green-500" /> Recibidos
-            </button>
-          </div>
-
-          {/* Tabla única */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-            <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-              {tablaVista === 'pendientes' ? (
-                <Loader2 className="h-5 w-5 text-yellow-500" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              )}
-              {tablaVista === 'pendientes' ? 'Documentos Pendientes' : 'Documentos Recibidos'}
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <th className="py-3 font-medium text-left">Documento</th>
-                    <th className="py-3 font-medium text-left">{tablaVista === 'pendientes' ? 'Solicitado' : 'Fecha Recepción'}</th>
-                    <th className="py-3 font-medium text-left">Fecha Límite</th>
-                    <th className="py-3 font-medium text-left">Días Restantes</th>
-                    <th className="py-3 font-medium text-left">Notas</th>
-                  
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {solicitudes
-                    .filter(doc => tablaVista === 'pendientes' ? doc.estado?.toLowerCase() === 'pendiente' : doc.estado === 'recibido')
-                    .map((doc) => (
-                      <tr key={doc.id_solicitud} className="text-gray-700 dark:text-gray-300">
-                        <td className="py-3 font-medium">{doc.tipo_documento_nombre}</td>
-                        <td className="py-3">{new Date(doc.fecha_solicitud).toLocaleDateString()}</td>
-                        <td className="py-3">{new Date(doc.fecha_limite).toLocaleDateString()}</td>
-                        <td className="py-3">
-                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                            doc.dias_restantes <= 7
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300'
-                              : doc.dias_restantes <= 30
-                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
-                              : 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
-                          }`}>
-                            {doc.dias_restantes} días
-                          </span>
-                        </td>
-                        <td className="py-3 text-sm text-gray-500 dark:text-gray-400">{doc.notas}</td>
-                       
-                      </tr>
-                    ))}
-                  {solicitudes.filter(doc => tablaVista === 'pendientes' ? doc.estado?.toLowerCase() === 'pendiente' : doc.estado === 'recibido').length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="text-center text-gray-400 py-4">
-                        No hay datos para mostrar. Verifica la fuente de datos.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-         
+    {/* Bloque de estructura documental */}
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+      <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+        <PieChartIcon className="h-5 w-5 text-blue-500" />
+        Estructura Documental
+      </div>
+      {renderFolderTree()}
+    </div>
   </div>
 </div>
  

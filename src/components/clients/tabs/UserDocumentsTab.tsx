@@ -1,20 +1,68 @@
 import { useEffect, useState, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from 'recharts';
-import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle, Upload, Folder, ChevronDown, ChevronRight } from 'lucide-react';
-import { clientService, type DocumentRequestsResponse, type ClientFoldersResponse } from '@/lib/api/services/client.service';
+import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle, Upload, Folder, ChevronDown, ChevronRight, Activity, ArrowLeft } from 'lucide-react';
+import { clientService, type DocumentRequestsResponse, type ClientFoldersResponse, type ClientActivity, type ClientActivityResponse } from '@/lib/api/services/client.service';
 import { useParams } from 'next/navigation';
 import { DocumentUpload } from '@/components/documents/upload/DocumentUploadPage';
 import { Modal } from '@/components/ui/modal';
 import { documentService } from '@/lib/api/services/document.service';
 import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { fetchDocumentContent } from '@/services/common/documentService';
+import { DocumentList } from './DocumentList';
+import { DocumentDetail } from './DocumentDetail';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E42', '#EF4444'];
+
+export interface ClientDocument {
+  id_documento: string;
+  codigo_documento: string;
+  titulo: string;
+  descripcion?: string;
+  id_tipo_documento?: string;
+  tipo_documento?: string;
+  version_actual?: number;
+  fecha_creacion?: string;
+  fecha_modificacion?: string;
+  id_carpeta?: string | null;
+  nombre_carpeta?: string | null;
+  estado?: string;
+  tags?: string[] | null;
+  creado_por_usuario?: string;
+  modificado_por_usuario?: string;
+  fecha_asignacion?: string;
+  asignado_por?: string;
+  asignado_por_usuario?: string;
+}
+
+interface ClientDocumentsResponse {
+  cliente: {
+    id: string;
+    codigo: string;
+    nombre: string;
+  };
+  documentos: ClientDocument[];
+  tipos_documento_disponibles: Array<{
+    id_tipo_documento: string;
+    nombre_tipo: string;
+    descripcion: string;
+  }>;
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+}
 
 export function UserDocumentsTab() {
   const params = useParams();
   const [data, setData] = useState<DocumentRequestsResponse | null>(null);
+  const [documentsData, setDocumentsData] = useState<ClientDocumentsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   // Polling states
@@ -26,6 +74,10 @@ export function UserDocumentsTab() {
   const [foldersLoading, setFoldersLoading] = useState(true);
   const [foldersError, setFoldersError] = useState<string | null>(null);
   const [openFolders, setOpenFolders] = useState<{ [key: string]: boolean }>({});
+  const [activity, setActivity] = useState<ClientActivity[]>([]);
+  const [previews, setPreviews] = useState<{ [docId: string]: { url_documento: string, url_miniatura: string, mime_type: string } }>({});
+  const [previewDoc, setPreviewDoc] = useState<{ url: string, title: string } | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<ClientDocument | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +113,49 @@ export function UserDocumentsTab() {
     fetchFolders();
   }, [params.id]);
 
+  // Fetch documents
+  const fetchClientDocuments = async () => {
+    try {
+      setDocumentsLoading(true);
+      const response = await clientService.getClientDocuments(params.id as string);
+      setDocumentsData(response);
+    } catch (err) {
+      setDocumentsError('Error al cargar los documentos del cliente');
+      console.error(err);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClientDocuments();
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!documentsData) return;
+    documentsData.documentos.forEach(doc => {
+      if (!previews[doc.id_documento]) {
+        fetchDocumentContent(doc.id_documento)
+          .then(data => setPreviews(prev => ({
+            ...prev,
+            [doc.id_documento]: {
+              url_documento: data.url_documento,
+              url_miniatura: data.url_miniatura,
+              mime_type: data.mime_type
+            }
+          })))
+          .catch(() => setPreviews(prev => ({
+            ...prev,
+            [doc.id_documento]: {
+              url_documento: '',
+              url_miniatura: '',
+              mime_type: ''
+            }
+          })));
+      }
+    });
+  }, [documentsData]);
+
   // Polling function
   const checkProcessingStatus = useCallback(async () => {
     try {
@@ -71,6 +166,8 @@ export function UserDocumentsTab() {
         // Actualizar también la estructura documental
         const foldersResponse = await clientService.getClientFolders(params.id as string);
         setFoldersData(foldersResponse);
+        // ACTUALIZAR DOCUMENTOS DEL CLIENTE
+        await fetchClientDocuments();
         setPendingUploads(false);
         toast.success("¡Documento procesado correctamente!", { id: "processing-document" });
         toast.dismiss("processing-document");
@@ -162,6 +259,35 @@ export function UserDocumentsTab() {
     );
   };
 
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const response = await clientService.getClientActivity(params.id as string);
+        setActivity(response.activities);
+      } catch (err) {
+        console.error('Error al cargar la actividad:', err);
+      }
+    };
+
+    fetchActivity();
+  }, [params.id]);
+
+  const handleDocumentClick = (document: ClientDocument) => {
+    setSelectedDocument(document);
+  };
+
+  const handleUploadNewVersion = (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDocId(docId);
+    setShowUploadModal(true);
+  };
+
+  const handleUploadNewDocument = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDocId(null);
+    setShowUploadModal(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -189,17 +315,19 @@ export function UserDocumentsTab() {
     { name: 'Cancelados', value: parseInt(estadisticas.cancelados) },
   ];
 
-  const handleUploadNewVersion = (docId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedDocId(docId);
-    setShowUploadModal(true);
-  };
-
-  const handleUploadNewDocument = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedDocId(null);
-    setShowUploadModal(true);
-  };
+  // Si hay un documento seleccionado, mostrar su detalle
+  if (selectedDocument) {
+    return (
+      <DocumentDetail
+        document={selectedDocument}
+        onBack={() => setSelectedDocument(null)}
+        onUploadNewVersion={(docId) => {
+          setSelectedDocId(docId);
+          setShowUploadModal(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -211,147 +339,22 @@ export function UserDocumentsTab() {
         </div>
       )}
 
-
- 
-
-      {/* Resumen de estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Solicitudes</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{estadisticas.total_solicitudes}</p>
-            </div>
-            <FileText className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pendientes</p>
-              <p className="text-2xl font-bold text-yellow-500">{estadisticas.pendientes}</p>
-            </div>
-            <Loader2 className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Recibidos</p>
-              <p className="text-2xl font-bold text-green-500">{estadisticas.recibidos}</p>
-            </div>
-            <CheckCircle2 className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Vencidos</p>
-              <p className="text-2xl font-bold text-red-500">{estadisticas.vencidos}</p>
-            </div>
-            <Clock className="h-8 w-8 text-red-500" />
-          </div>
-        </div>
-   
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          onClick={handleUploadNewDocument}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Upload className="h-4 w-4" />
-          Subir nuevo documento
-        </button>
-      </div>
- 
-      {/* Gráfico de estado */}
-      <div className="flex gap-8">
-                {/* Columna de gráfico (20%) */}
-          <div className="w-[30%]">
-                      {/* Bloque de estructura documental */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-                <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5 text-blue-500" />
-                  Estructura Documental
-                </div>
-                {renderFolderTree()}
-              </div>
-        </div>
-        {/* Columna de tablas (80%) */}
-        <div className="w-[70%] space-y-8">
-          {/* Tabla unificada de documentos */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-            <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-500" />
-              Lista de Documentos
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <th className="py-3 font-medium text-left">Estado</th>
-                    <th className="py-3 font-medium text-left">Documento</th>
-                    <th className="py-3 font-medium text-left">Fecha Solicitud</th>
-                    <th className="py-3 font-medium text-left">Fecha Límite</th>
-                    <th className="py-3 font-medium text-left">Días Restantes</th>
-                    <th className="py-3 font-medium text-left">Notas</th>
-                    <th className="py-3 font-medium text-left">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {solicitudes.map((doc) => (
-                    <tr key={doc.id_solicitud} className="text-gray-700 dark:text-gray-300">
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          {doc.estado === 'recibido' ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <Loader2 className="h-5 w-5 text-yellow-500" />
-                          )}
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                            doc.estado === 'recibido'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
-                          }`}>
-                            {doc.estado === 'recibido' ? 'Recibido' : 'Pendiente'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 font-medium">{doc.tipo_documento_nombre}</td>
-                      <td className="py-3">{new Date(doc.fecha_solicitud).toLocaleDateString()}</td>
-                      <td className="py-3">{new Date(doc.fecha_limite).toLocaleDateString()}</td>
-                      <td className="py-3">
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                          doc.dias_restantes <= 7 
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300'
-                            : doc.dias_restantes <= 30
-                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
-                        }`}>
-                          {doc.dias_restantes} días
-                        </span>
-                      </td>
-                      <td className="py-3 text-sm text-gray-500 dark:text-gray-400">{doc.notas}</td>
-                      <td className="py-3">
-                        <button 
-                          onClick={(e) => handleUploadNewVersion(doc.id_documento_recibido || '', e)}
-                          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                          title="Subir nueva versión"
-                        >
-                          <Upload className="h-4 w-4 text-blue-500" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-
-      </div>
+      <DocumentList
+        data={data}
+        documentsData={documentsData}
+        documentsLoading={documentsLoading}
+        documentsError={documentsError}
+        previews={previews}
+        onDocumentClick={handleDocumentClick}
+        onUploadNewDocument={handleUploadNewDocument}
+        onUploadNewVersion={handleUploadNewVersion}
+        onPreviewClick={(url, title) => setPreviewDoc({ url, title })}
+        foldersData={foldersData}
+        foldersLoading={foldersLoading}
+        foldersError={foldersError}
+        openFolders={openFolders}
+        onToggleFolder={toggleFolder}
+      />
 
       {showUploadModal && (
         <Modal onClose={() => setShowUploadModal(false)}>
@@ -362,6 +365,12 @@ export function UserDocumentsTab() {
             isNewVersion={!!selectedDocId}
           />
         </Modal>
+      )}
+
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={() => setPreviewDoc(null)}>
+          <img src={previewDoc.url} alt={previewDoc.title} className="max-w-3xl max-h-[80vh] rounded shadow-lg" />
+        </div>
       )}
     </div>
   );

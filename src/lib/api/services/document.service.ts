@@ -74,7 +74,7 @@ export const documentService = {
   uploadDocumentVersion: async ({ id_cliente, parent_document_id, filename, titulo, file, content_type, comentario }: 
     { id_cliente: string; parent_document_id: string; filename: string; titulo?: string; file: File; content_type?: string; comentario?: string }) => {
     // Paso 1: Obtener la URL prefirmada para la nueva versión
-    debugger;
+    
     const { data } = await axiosInstance.post('/documents', {
       id_cliente,
       filename,

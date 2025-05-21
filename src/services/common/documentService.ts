@@ -29,11 +29,16 @@ export interface DocumentsResponse {
 }
 
 export interface DocumentPreview {
-  url: string;
+  url_documento: string;
   mime_type: string;
   nombre_archivo: string;
   tamano_bytes: number;
   expiracion_url: number;
+  url_miniatura: string;
+  miniatura_mime_type: string;
+  miniatura_nombre: string;
+  tiene_miniatura: boolean;
+  miniatura_es_icono: boolean;
 }
 
 export async function fetchDocuments(page: number = 1, pageSize: number = 1000): Promise<DocumentsResponse> {
@@ -56,8 +61,6 @@ export async function fetchDocuments(page: number = 1, pageSize: number = 1000):
 
 export async function fetchDocumentContent(documentId: string): Promise<DocumentPreview> {
   const token = localStorage.getItem("session_token");
-  console.log('Fetching document content for ID:', documentId);
-  
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}/preview`,
     {
@@ -68,7 +71,6 @@ export async function fetchDocumentContent(documentId: string): Promise<Document
   );
 
   if (!response.ok) {
-    console.error('Error response:', response.status, response.statusText);
     const errorData = await response.json().catch(() => null);
     if (errorData?.message?.includes('NoSuchKey')) {
       throw new Error('El documento no se encuentra disponible en este momento');
@@ -77,11 +79,8 @@ export async function fetchDocumentContent(documentId: string): Promise<Document
   }
 
   const data = await response.json();
-  console.log('Document content response:', data);
-  
-  if (!data.url) {
+  if (!data.url_documento) {
     throw new Error('No se pudo obtener la URL del documento');
   }
-  
   return data as DocumentPreview;
 } 

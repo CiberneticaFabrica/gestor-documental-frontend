@@ -218,7 +218,7 @@ export function UserDocumentsTab() {
           {foldersData.categorias.map((categoria: any) => {
             const carpetaEntry = Object.values(foldersData.documentos_por_carpeta).find((c: any) => c.nombre_carpeta === categoria.nombre);
             const documentos = carpetaEntry ? (carpetaEntry as any).documentos : [];
-            const isOpen = openFolders[categoria.id] ?? true; // Por defecto abiertas
+            const isOpen = openFolders[categoria.id] ?? false; // Por defecto abiertas
             return (
               <div key={categoria.id || categoria.nombre} className="border rounded p-2 bg-gray-50">
                 <div

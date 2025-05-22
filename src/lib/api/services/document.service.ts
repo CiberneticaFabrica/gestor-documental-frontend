@@ -28,6 +28,18 @@ export interface DocumentVersionsResponse {
   };
 }
 
+export interface DocumentVersionPreview {
+  url_documento: string;
+  mime_type: string;
+  nombre_archivo: string;
+  tamano_bytes: number;
+  numero_version: number;
+  id_version: string;
+  expiracion_url: number;
+  tiene_miniatura: boolean;
+  url_miniatura: string | null;
+}
+
 export const documentService = {
   getVersions: async (documentId: string) => {
     const { data } = await axiosInstance.get<DocumentVersionsResponse>(`/documents/${documentId}/versions`);
@@ -127,5 +139,9 @@ export const documentService = {
       id_carpeta_destino
     });
     return data; // { message, id_documento }
+  },
+  getVersionPreview: async (documentId: string, versionId: string) => {
+    const { data } = await axiosInstance.get<DocumentVersionPreview>(`/documents/${documentId}/preview-version/${versionId}`);
+    return data;
   },
 };

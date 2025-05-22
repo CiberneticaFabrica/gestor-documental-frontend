@@ -213,6 +213,7 @@ export const clientService = {
   },
 
   async getClientFolders(clientId: string): Promise<ClientFoldersResponse> {
+  
     const { data } = await axiosInstance.get<ClientFoldersResponse>(`/clients/${clientId}/folders`);
     return data;
   },

@@ -3,7 +3,7 @@ import { type DocumentRequestsResponse, type ClientFoldersResponse } from '@/lib
 import { type ClientDocument } from './UserDocumentsTab';
 import { useState, useEffect } from 'react';
 import { documentService } from '@/lib/api/services/document.service';
-import type { DocumentVersion } from '@/lib/api/services/document.service';
+import type { DocumentVersion, DocumentVersionPreview } from '@/lib/api/services/document.service';
 import React from 'react';
 
 interface DocumentListProps {
@@ -29,12 +29,21 @@ interface VersionDetailModalProps {
   versions: DocumentVersion[];
   onClose: () => void;
   onPreviewClick: (url: string, title: string) => void;
-  previews: { [docId: string]: { url_documento: string, url_miniatura: string, mime_type: string } };
+  documentId: string;
 }
 
-export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions, onClose, onPreviewClick, previews }) => {
+export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions, onClose, onPreviewClick, documentId }) => {
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0);
+  const [versionPreview, setVersionPreview] = useState<DocumentVersionPreview | null>(null);
   const selectedVersion = versions[selectedVersionIndex];
+
+  useEffect(() => {
+    if (selectedVersion) {
+      documentService.getVersionPreview(documentId, selectedVersion.id_version)
+        .then(data => setVersionPreview(data))
+        .catch(err => console.error('Error al obtener previsualización:', err));
+    }
+  }, [selectedVersion, documentId]);
 
   if (!versions.length) return null;
 
@@ -84,26 +93,26 @@ export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions
           <div className="mb-2"><b>Tamaño:</b> {(selectedVersion.tamano_bytes / 1024).toFixed(1)} KB</div>
           <div className="mb-2"><b>Tipo:</b> {selectedVersion.mime_type}</div>
           <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded mt-4">
-            {previews[selectedVersion.id_version] ? (
+            {versionPreview ? (
               <img
                 src={
-                  previews[selectedVersion.id_version].mime_type.startsWith('image/')
-                    ? previews[selectedVersion.id_version].url_documento
-                    : previews[selectedVersion.id_version].url_miniatura
+                  versionPreview.mime_type.startsWith('image/')
+                    ? versionPreview.url_documento
+                    : versionPreview.url_miniatura || versionPreview.url_documento
                 }
-                alt={selectedVersion.nombre_original}
+                alt={versionPreview.nombre_archivo}
                 className="w-full h-48 object-contain rounded cursor-pointer"
                 onClick={() =>
                   onPreviewClick(
-                    previews[selectedVersion.id_version].mime_type.startsWith('image/')
-                      ? previews[selectedVersion.id_version].url_documento
-                      : previews[selectedVersion.id_version].url_miniatura,
-                    selectedVersion.nombre_original
+                    versionPreview.mime_type.startsWith('image/')
+                      ? versionPreview.url_documento
+                      : versionPreview.url_miniatura || versionPreview.url_documento,
+                    versionPreview.nombre_archivo
                   )
                 }
               />
             ) : (
-              <span className="text-gray-400">Sin previsualización</span>
+              <span className="text-gray-400">Cargando previsualización...</span>
             )}
           </div>
         </div>
@@ -149,17 +158,16 @@ export function DocumentList({
     return (
       <div className="relative pl-6">
         {/* Línea vertical */}
-        <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-300" style={{ zIndex: 0 }} />
+        <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-300 z-0" />
         <div className="space-y-2 relative z-10">
           {foldersData.categorias.map((categoria: any) => {
-            const carpetaEntry = Object.values(foldersData.documentos_por_carpeta).find((c: any) => c.nombre_carpeta === categoria.nombre);
-            const documentos = carpetaEntry ? (carpetaEntry as any).documentos : [];
-            const isOpen = openFolders[categoria.id] ?? true; // Por defecto abiertas
+            const documentos = categoria.documentos_existentes_detalle || [];
+            const isOpen = openFolders[categoria.id] ?? true;
             return (
-              <div key={categoria.id || categoria.nombre} className="border rounded p-2 bg-gray-50">
+              <div key={categoria.id} className="border rounded p-2 bg-gray-50">
                 <div
                   className="flex items-center font-semibold text-blue-700 mb-1 cursor-pointer select-none"
-                  onClick={() => onToggleFolder(categoria.id || categoria.nombre)}
+                  onClick={() => onToggleFolder(categoria.id)}
                 >
                   {isOpen ? (
                     <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
@@ -168,23 +176,29 @@ export function DocumentList({
                   )}
                   <Folder className="h-5 w-5 mr-2 text-yellow-500" />
                   {categoria.nombre}
-                  <span className="ml-2 text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">{documentos.length}</span>
+                  <span className="ml-2 text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">
+                    {documentos.length}
+                  </span>
                 </div>
                 {isOpen && (
                   <ul className="ml-8 list-none">
-                    {documentos.length === 0 && (
+                    {documentos.length === 0 ? (
                       <li className="text-gray-400 flex items-center">
                         <FileText className="h-4 w-4 mr-2 text-gray-300" />
                         Sin documentos
                       </li>
+                    ) : (
+                      documentos.map((doc: any) => (
+                        <li key={doc.id_documento || doc.id} className="text-gray-700 flex items-center mb-2">
+                          <FileText className="h-4 w-4 mr-2 text-blue-400" />
+                          <span className="font-medium">{doc.titulo}</span>
+                          <span className="text-xs text-gray-500 ml-2">({doc.tipo_documento || doc.tipo})</span>
+                          {doc.validado || doc.validado === 1 ? (
+                            <CheckCircle2 className="h-3 w-3 ml-1 text-green-500" />
+                          ) : null}
+                        </li>
+                      ))
                     )}
-                    {documentos.map((doc: any) => (
-                      <li key={doc.id} className="text-gray-700 flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-blue-400" />
-                        <span className="font-medium">{doc.titulo}</span>
-                        <span className="text-xs text-gray-500 ml-2">({doc.tipo})</span>
-                      </li>
-                    ))}
                   </ul>
                 )}
               </div>
@@ -378,6 +392,7 @@ export function DocumentList({
                                       return;
                                     }
                                     setVersions(data.versions);
+                                    setSelectedDocumentId(doc.id_documento);
                                     setShowVersionModal(true);
                                   } catch (err) {
                                     alert('No se pudo obtener el detalle de la versión. El documento no tiene versiones o hubo un error.');
@@ -475,12 +490,12 @@ export function DocumentList({
         </div>
       </div>
 
-      {showVersionModal && versions.length > 0 && (
+      {showVersionModal && versions.length > 0 && selectedDocumentId && (
         <VersionDetailModal
           versions={versions}
           onClose={() => setShowVersionModal(false)}
           onPreviewClick={onPreviewClick}
-          previews={previews}
+          documentId={selectedDocumentId}
         />
       )}
     </div>

@@ -135,23 +135,29 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
   };
 
   const renderFolderTree = () => {
+    console.log('foldersData:', foldersData);
+    console.log('foldersLoading:', foldersLoading);
+    console.log('foldersError:', foldersError);
+  
     if (foldersLoading) return <div className="text-gray-500">Cargando estructura documental...</div>;
     if (foldersError) return <div className="text-red-500">{foldersError}</div>;
-    if (!foldersData || !foldersData.categorias.length) return <div className="text-gray-400">No hay carpetas definidas.</div>;
+    if (!foldersData) return <div className="text-gray-400">No hay datos de carpetas disponibles.</div>;
+    if (!foldersData.categorias || foldersData.categorias.length === 0) return <div className="text-gray-400">No hay carpetas definidas.</div>;
+  
     return (
       <div className="relative pl-6">
         {/* Línea vertical */}
-        <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-300" style={{ zIndex: 0 }} />
+        <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-300 z-0" />
         <div className="space-y-2 relative z-10">
           {foldersData.categorias.map((categoria: any) => {
-            const carpetaEntry = Object.values(foldersData.documentos_por_carpeta).find((c: any) => c.nombre_carpeta === categoria.nombre);
-            const documentos = carpetaEntry ? (carpetaEntry as any).documentos : [];
-            const isOpen = openFolders[categoria.id] ?? false; // Por defecto abiertas
+            const documentos = categoria.documentos_existentes_detalle || [];
+            const isOpen = openFolders[categoria.id] ?? false;
+            
             return (
-              <div key={categoria.id || categoria.nombre} className="border rounded p-2 bg-gray-50">
+              <div key={categoria.id} className="border rounded p-2 bg-gray-50">
                 <div
-                  className="flex items-center   text-blue-600 mb-1 cursor-pointer select-none"
-                  onClick={() => toggleFolder(categoria.id || categoria.nombre)}
+                  className="flex items-center text-blue-600 mb-1 cursor-pointer select-none"
+                  onClick={() => toggleFolder(categoria.id)}
                 >
                   {isOpen ? (
                     <ChevronDown className="h-4 w-4 mr-1 text-gray-500" />
@@ -160,23 +166,29 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
                   )}
                   <Folder className="h-5 w-5 mr-2 text-yellow-500" />
                   {categoria.nombre}
-                  <span className="ml-2 text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">{documentos.length}</span>
+                  <span className="ml-2 text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5">
+                    {documentos.length}
+                  </span>
                 </div>
                 {isOpen && (
                   <ul className="ml-8 list-none">
-                    {documentos.length === 0 && (
+                    {documentos.length === 0 ? (
                       <li className="text-gray-400 flex items-center">
                         <FileText className="h-4 w-4 mr-2 text-gray-300" />
                         Sin documentos
                       </li>
+                    ) : (
+                      documentos.map((doc: any) => (
+                        <li key={doc.id_documento} className="text-gray-700 flex items-center mb-2">
+                          <FileText className="h-4 w-4 mr-2 text-blue-400" />
+                          <span className="font-medium">{doc.titulo}</span>
+                          <span className="text-xs text-gray-500 ml-2">({doc.tipo_documento})</span>
+                          {doc.validado ? (
+                            <CheckCircle2 className="h-3 w-3 ml-1 text-green-500" />
+                          ) : null}
+                        </li>
+                      ))
                     )}
-                    {documentos.map((doc: any) => (
-                      <li key={doc.id} className="text-gray-700 flex items-center">
-                        <FileText className="h-4 w-4 mr-2 text-blue-400" />
-                        <span className="font-medium">{doc.titulo}</span>
-                        <span className="text-xs text-gray-500 ml-2">({doc.tipo})</span>
-                      </li>
-                    ))}
                   </ul>
                 )}
               </div>

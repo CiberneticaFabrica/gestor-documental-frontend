@@ -40,6 +40,85 @@ export interface DocumentVersionPreview {
   url_miniatura: string | null;
 }
 
+export interface DocumentDetailsResponse {
+  documento: {
+    id: string;
+    codigo: string;
+    titulo: string;
+    descripcion: string;
+    estado: string;
+    fechas: {
+      creacion: string;
+      modificacion: string;
+      validacion: string | null;
+    };
+    tags: any;
+    metadatos: any;
+    estadisticas: any;
+  };
+  tipo_documento: {
+    id: string;
+    nombre: string;
+  };
+  version_actual: {
+    numero: number;
+    id: string;
+    ruta: string;
+    tipo_almacenamiento: string;
+    mime_type: string;
+    tamano_bytes: number;
+    nombre_original: string;
+    extension: string;
+  };
+  cliente: {
+    id: string;
+    nombre: string;
+    codigo: string;
+    tipo: string;
+    documento_identificacion: {
+      tipo_documento: string;
+      numero_documento: string;
+      fecha_emision: string;
+      fecha_expiracion: string;
+      genero: string;
+      nombre_completo: string;
+      pais_emision: string;
+    };
+    segmento_bancario: string;
+    nivel_riesgo: string;
+    estado_documental: string;
+    gestor: {
+      id: string;
+      nombre: string;
+    };
+  };
+  documento_especializado: {
+    documento_identificacion: {
+      tipo_documento: string;
+      numero_documento: string;
+      fecha_emision: string;
+      fecha_expiracion: string;
+      genero: string;
+      nombre_completo: string;
+      pais_emision: string;
+    };
+  };
+  analisis_ia?: {
+    id_analisis: string;
+    tipo_documento: string;
+    confianza_clasificacion: string;
+    estado_analisis: string;
+    fecha_analisis: string;
+    verificado: number;
+    verificado_por: string | null;
+    texto_extraido: string;
+    entidades_detectadas: {
+      phone: string[];
+      amounts: string[];
+    };
+  };
+}
+
 export const documentService = {
   getVersions: async (documentId: string) => {
     const { data } = await axiosInstance.get<DocumentVersionsResponse>(`/documents/${documentId}/versions`);
@@ -142,6 +221,10 @@ export const documentService = {
   },
   getVersionPreview: async (documentId: string, versionId: string) => {
     const { data } = await axiosInstance.get<DocumentVersionPreview>(`/documents/${documentId}/preview-version/${versionId}`);
+    return data;
+  },
+  getDocumentDetails: async (documentId: string): Promise<DocumentDetailsResponse> => {
+    const { data } = await axiosInstance.get<DocumentDetailsResponse>(`/documents/${documentId}`);
     return data;
   },
 };

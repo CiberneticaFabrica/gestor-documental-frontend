@@ -80,11 +80,11 @@ function PreviewPanel({ document }: { document: Document }) {
 
     // Determinar el tipo de archivo por el MIME type
     if (previewData.mime_type.startsWith('image/')) {
-      console.log('Rendering image preview:', previewData.url);
+      console.log('Rendering image preview:', previewData.url_documento);
       return (
         <div className="h-full flex items-center justify-center">
           <img
-            src={previewData.url}
+            src={previewData.url_documento}
             alt={previewData.nombre_archivo}
             className="max-w-full max-h-full object-contain"
             onError={(e) => {
@@ -97,10 +97,10 @@ function PreviewPanel({ document }: { document: Document }) {
     }
 
     if (previewData.mime_type === 'application/pdf') {
-      console.log('Rendering PDF preview:', previewData.url);
+      console.log('Rendering PDF preview:', previewData.url_documento);
       return (
         <div className="h-full">
-          <PDFViewer url={previewData.url} filename={previewData.nombre_archivo} />
+          <PDFViewer url={previewData.url_documento} filename={previewData.nombre_archivo} />
         </div>
       );
     }
@@ -111,7 +111,7 @@ function PreviewPanel({ document }: { document: Document }) {
       <div className="flex flex-col items-center justify-center h-full text-gray-400">
         <span className="mb-2">Formato no soportado para previsualización</span>
         <a
-          href={previewData.url}
+          href={previewData.url_documento}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-500 hover:text-blue-600"

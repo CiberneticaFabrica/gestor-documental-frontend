@@ -1,10 +1,11 @@
-import { FileText, Loader2, Upload, AlertCircle, CheckCircle2, Clock, Folder, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Loader2, Upload, AlertCircle, CheckCircle2, Clock, Folder, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import { type DocumentRequestsResponse, type ClientFoldersResponse } from '@/lib/api/services/client.service';
 import { type ClientDocument } from './UserDocumentsTab';
 import { useState, useEffect } from 'react';
-import { documentService } from '@/lib/api/services/document.service';
+import { documentService, type DocumentDetailsResponse } from '@/lib/api/services/document.service';
 import type { DocumentVersion, DocumentVersionPreview } from '@/lib/api/services/document.service';
 import React from 'react';
+import { DocumentIdentificacionCliente } from './DocumentIdentificacionCliente';
 
 interface DocumentListProps {
   data: DocumentRequestsResponse;
@@ -23,6 +24,7 @@ interface DocumentListProps {
   foldersError: string | null;
   openFolders: { [key: string]: boolean };
   onToggleFolder: (id: string) => void;
+  onRefresh: () => void;
 }
 
 interface VersionDetailModalProps {
@@ -135,7 +137,8 @@ export function DocumentList({
   foldersLoading,
   foldersError,
   openFolders,
-  onToggleFolder
+  onToggleFolder,
+  onRefresh
 }: DocumentListProps) {
   const { solicitudes, estadisticas } = data;
   const [tab, setTab] = useState<'detalle' | 'versiones'>('detalle');
@@ -145,6 +148,27 @@ export function DocumentList({
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
   const [versionPreviewUrl, setVersionPreviewUrl] = useState('');
+  const [showIdentificacionView, setShowIdentificacionView] = useState(false);
+  const [identificacionData, setIdentificacionData] = useState<DocumentDetailsResponse | null>(null);
+
+  const handleDocumentClick = async (doc: ClientDocument) => {
+    // Check if the document is an identification document
+    if (doc.tipo_documento?.toLowerCase() === 'dni' || doc.tipo_documento?.toLowerCase() === 'pasaporte') {
+      try {
+        const response = await documentService.getDocumentDetails(doc.id_documento);
+        setIdentificacionData(response);
+        setShowIdentificacionView(true);
+        return; // Add this return to prevent calling onDocumentClick
+      } catch (error) {
+        console.error('Error fetching document details:', error);
+        // Only call onDocumentClick if there's an error
+        onDocumentClick(doc);
+      }
+    } else {
+      // Default behavior for non-identification documents
+      onDocumentClick(doc);
+    }
+  };
 
   const handlePreview = (versionId: string) => {
     documentService.getDocumentContentUrl(versionId)
@@ -208,7 +232,7 @@ export function DocumentList({
       </div>
     );
   };
-
+  
   useEffect(() => {
     if (tab === 'versiones' && selectedDocumentId) {
       documentService.getVersions(selectedDocumentId)
@@ -218,285 +242,303 @@ export function DocumentList({
 
   return (
     <div className="space-y-8">
-      {/* Resumen de estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Solicitudes</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{estadisticas.total_solicitudes}</p>
-            </div>
-            <FileText className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pendientes</p>
-              <p className="text-2xl font-bold text-yellow-500">{estadisticas.pendientes}</p>
-            </div>
-            <Loader2 className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Recibidos</p>
-              <p className="text-2xl font-bold text-green-500">{estadisticas.recibidos}</p>
-            </div>
-            <CheckCircle2 className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Vencidos</p>
-              <p className="text-2xl font-bold text-red-500">{estadisticas.vencidos}</p>
-            </div>
-            <Clock className="h-8 w-8 text-red-500" />
-          </div>
-        </div>
-      </div>
-
-      {/* Lista horizontal de documentos */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex items-center gap-4">
-        <div className="flex flex-wrap gap-2 flex-1">
-          {solicitudes.map((doc) => (
-            <div
-              key={doc.id_solicitud}
-              className="flex items-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1 min-w-[180px] max-w-[220px] h-14"
-              style={{ minHeight: 44, maxHeight: 44 }}
-            >
-              <div className={`w-1 h-8 rounded-full mr-2 ${
-                doc.estado === 'recibido'
-                  ? 'bg-green-500'
-                  : doc.dias_restantes <= 7
-                  ? 'bg-red-500'
-                  : doc.dias_restantes <= 30
-                  ? 'bg-yellow-400'
-                  : 'bg-red-500'
-              }`} />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">{doc.tipo_documento_nombre}</div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                  {new Date(doc.fecha_solicitud).toLocaleDateString()} | {doc.dias_restantes} días
+      {showIdentificacionView && identificacionData ? (
+        <DocumentIdentificacionCliente
+          documentData={identificacionData}
+          onBack={() => setShowIdentificacionView(false)}
+        />
+      ) : (
+        <>
+          {/* Resumen de estadísticas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Solicitudes</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{estadisticas.total_solicitudes}</p>
                 </div>
+                <FileText className="h-8 w-8 text-blue-500" />
               </div>
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                doc.estado === 'recibido'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {doc.estado === 'recibido' ? 'Recibido' : 'Pendiente'}
-              </span>
             </div>
-          ))}
-        </div>
-        <div className="ml-4">
-          <button
-            onClick={onUploadNewDocument}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Upload className="h-4 w-4" />
-            Subir nuevo documento
-          </button>
-        </div>
-      </div>
-
-      {/* Estructura documental y tabla de documentos */}
-      <div className="flex gap-8">
-        {/* Columna de estructura documental (30%) */}
-        <div className="w-[30%]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
-            <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <Folder className="h-5 w-5 text-blue-500" />
-              Estructura Documental
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Pendientes</p>
+                  <p className="text-2xl font-bold text-yellow-500">{estadisticas.pendientes}</p>
+                </div>
+                <Loader2 className="h-8 w-8 text-yellow-500" />
+              </div>
             </div>
-            {renderFolderTree()}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Recibidos</p>
+                  <p className="text-2xl font-bold text-green-500">{estadisticas.recibidos}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Vencidos</p>
+                  <p className="text-2xl font-bold text-red-500">{estadisticas.vencidos}</p>
+                </div>
+                <Clock className="h-8 w-8 text-red-500" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Columna de tabla de documentos (70%) */}
-        <div className="w-[70%]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-            <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-500" />
-              Documentos del Cliente
+          {/* Lista horizontal de documentos */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex items-center gap-4">
+            <div className="flex flex-wrap gap-2 flex-1">
+              {solicitudes.map((doc) => (
+                <div
+                  key={doc.id_solicitud}
+                  className="flex items-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1 min-w-[180px] max-w-[220px] h-14"
+                  style={{ minHeight: 44, maxHeight: 44 }}
+                >
+                  <div className={`w-1 h-8 rounded-full mr-2 ${
+                    doc.estado === 'recibido'
+                      ? 'bg-green-500'
+                      : doc.dias_restantes <= 7
+                      ? 'bg-red-500'
+                      : doc.dias_restantes <= 30
+                      ? 'bg-yellow-400'
+                      : 'bg-red-500'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">{doc.tipo_documento_nombre}</div>
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                      {new Date(doc.fecha_solicitud).toLocaleDateString()} | {doc.dias_restantes} días
+                    </div>
+                  </div>
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                    doc.estado === 'recibido'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {doc.estado === 'recibido' ? 'Recibido' : 'Pendiente'}
+                  </span>
+                </div>
+              ))}
             </div>
-            {tab === 'detalle' && (
-              documentsLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="ml-4">
+              <button
+                onClick={onUploadNewDocument}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Subir nuevo documento
+              </button>
+            </div>
+          </div>
+
+          {/* Estructura documental y tabla de documentos */}
+          <div className="flex gap-8">
+            {/* Columna de estructura documental (30%) */}
+            <div className="w-[30%]">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700">
+                <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <Folder className="h-5 w-5 text-blue-500" />
+                  Estructura Documental
                 </div>
-              ) : documentsError ? (
-                <div className="text-red-500 text-center py-4">{documentsError}</div>
-              ) : documentsData && documentsData.documentos.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                        <th className="py-3 font-medium text-left">Documento</th>
-                        <th className="py-3 font-medium text-left">Título</th>
-                        <th className="py-3 font-medium text-left">Tipo</th>
-                        <th className="py-3 font-medium text-left">Versión</th>
-                        <th className="py-3 font-medium text-left">Carpeta</th>
-                        <th className="py-3 font-medium text-left">Estado</th>
-                        <th className="py-3 font-medium text-left">Fecha Creación</th>
-                        <th className="py-3 font-medium text-left">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {documentsData.documentos.map((doc) => (
-                        <tr key={doc.id_documento} className="text-gray-700 dark:text-gray-300">
-                          <td className="py-3">
-                            {previews[doc.id_documento] ? (
-                              <img
-                                src={
-                                  previews[doc.id_documento].mime_type.startsWith('image/')
-                                    ? previews[doc.id_documento].url_documento
-                                    : previews[doc.id_documento].url_miniatura
-                                }
-                                alt={doc.titulo}
-                                className="w-16 h-16 object-cover rounded cursor-pointer"
-                                onClick={() =>
-                                  onPreviewClick(
-                                    previews[doc.id_documento].mime_type.startsWith('image/')
-                                      ? previews[doc.id_documento].url_documento
-                                      : previews[doc.id_documento].url_miniatura,
-                                    doc.titulo
-                                  )
-                                }
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gray-200 rounded" />
-                            )}
-                          </td>
-                          <td className="py-3">
-                            <button
-                              onClick={() => onDocumentClick(doc)}
-                              className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              {doc.titulo}
-                            </button>
-                          </td>
-                          <td className="py-3">{doc.tipo_documento || 'N/A'}</td>
-                          <td className="py-3">
-                            {doc.version_actual && doc.version_actual > 1 ? (
-                              <button
-                                className="text-blue-600 underline hover:text-blue-800"
-                                onClick={async () => {
-                                  try {
-                                    const data = await documentService.getVersions(doc.id_documento);
-                                    if (!data.versions || data.versions.length === 0) {
-                                      alert('No hay versiones disponibles para este documento.');
-                                      return;
-                                    }
-                                    setVersions(data.versions);
-                                    setSelectedDocumentId(doc.id_documento);
-                                    setShowVersionModal(true);
-                                  } catch (err) {
-                                    alert('No se pudo obtener el detalle de la versión. El documento no tiene versiones o hubo un error.');
-                                  }
-                                }}
-                              >
-                                v{doc.version_actual}
-                              </button>
-                            ) : (
-                              <>v{doc.version_actual || '1'}</>
-                            )}
-                          </td>
-                          <td className="py-3">{doc.nombre_carpeta || 'Sin carpeta'}</td>
-                          <td className="py-3">
-                            <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                              doc.estado === 'publicado' 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
-                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
-                            }`}>
-                              {doc.estado || 'Pendiente'}
-                            </span>
-                          </td>
-                          <td className="py-3">{doc.fecha_creacion ? new Date(doc.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
-                          <td className="py-3">
-                            <button 
-                              onClick={(e) => onUploadNewVersion(doc.id_documento, e)}
-                              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                              title="Subir nueva versión"
-                            >
-                              <Upload className="h-4 w-4 text-blue-500" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No hay documentos disponibles
-                </div>
-              )
-            )}
-            {tab === 'versiones' && selectedDocumentId && (
-              <div>
-                <div className="flex items-center mb-4">
+                {renderFolderTree()}
+              </div>
+            </div>
+
+            {/* Columna de tabla de documentos (70%) */}
+            <div className="w-[70%]">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                <div className="font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    Documentos del Cliente
+                  </div>
                   <button
-                    className="text-blue-600 hover:underline mr-4"
-                    onClick={() => setTab('detalle')}
+                    onClick={onRefresh}
+                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    title="Actualizar datos"
                   >
-                    ← Volver a documentos
+                    <RefreshCw className="w-5 h-5" />
                   </button>
-                  <h3 className="text-lg font-bold">Historial de Versiones</h3>
                 </div>
-                {versions.length === 0 ? (
-                  <div className="text-gray-500">No hay versiones para este documento.</div>
-                ) : (
-                  <table className="w-full text-sm mb-4">
-                    <thead>
-                      <tr className="text-gray-500 dark:text-gray-400 border-b">
-                        <th className="py-2">Versión</th>
-                        <th className="py-2">Fecha</th>
-                        <th className="py-2">Usuario</th>
-                        <th className="py-2">Comentario</th>
-                        <th className="py-2">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {versions.map((v) => (
-                        <tr key={v.id_version} className="border-b">
-                          <td className="py-2 font-bold">v{v.numero_version}</td>
-                          <td className="py-2">{new Date(v.fecha_creacion).toLocaleString()}</td>
-                          <td className="py-2">{v.creado_por_usuario}</td>
-                          <td className="py-2">{v.comentario_version}</td>
-                          <td className="py-2">
-                            <button
-                              className="text-blue-600 hover:underline"
-                              onClick={() => {
-                                setSelectedVersion(v);
-                                setVersionPreviewUrl(v.ubicacion_almacenamiento_ruta);
-                                setShowVersionModal(true);
-                              }}
-                            >
-                              Previsualizar
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {tab === 'detalle' && (
+                  documentsLoading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : documentsError ? (
+                    <div className="text-red-500 text-center py-4">{documentsError}</div>
+                  ) : documentsData && documentsData.documentos.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                            <th className="py-3 font-medium text-left">Documento</th>
+                            <th className="py-3 font-medium text-left">Título</th>
+                            <th className="py-3 font-medium text-left">Tipo</th>
+                            <th className="py-3 font-medium text-left">Versión</th>
+                            <th className="py-3 font-medium text-left">Carpeta</th>
+                            <th className="py-3 font-medium text-left">Estado</th>
+                            <th className="py-3 font-medium text-left">Fecha Creación</th>
+                            <th className="py-3 font-medium text-left">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {documentsData.documentos.map((doc) => (
+                            <tr key={doc.id_documento} className="text-gray-700 dark:text-gray-300">
+                              <td className="py-3">
+                                {previews[doc.id_documento] ? (
+                                  <img
+                                    src={
+                                      previews[doc.id_documento].mime_type.startsWith('image/')
+                                        ? previews[doc.id_documento].url_documento
+                                        : previews[doc.id_documento].url_miniatura
+                                    }
+                                    alt={doc.titulo}
+                                    className="w-16 h-16 object-cover rounded cursor-pointer"
+                                    onClick={() =>
+                                      onPreviewClick(
+                                        previews[doc.id_documento].mime_type.startsWith('image/')
+                                          ? previews[doc.id_documento].url_documento
+                                          : previews[doc.id_documento].url_miniatura,
+                                        doc.titulo
+                                      )
+                                    }
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 bg-gray-200 rounded" />
+                                )}
+                              </td>
+                              <td className="py-3">
+                                <button
+                                  onClick={() => handleDocumentClick(doc)}
+                                  className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                >
+                                  {doc.titulo}
+                                </button>
+                              </td>
+                              <td className="py-3">{doc.tipo_documento || 'N/A'}</td>
+                              <td className="py-3">
+                                {doc.version_actual && doc.version_actual > 1 ? (
+                                  <button
+                                    className="text-blue-600 underline hover:text-blue-800"
+                                    onClick={async () => {
+                                      try {
+                                        const data = await documentService.getVersions(doc.id_documento);
+                                        if (!data.versions || data.versions.length === 0) {
+                                          alert('No hay versiones disponibles para este documento.');
+                                          return;
+                                        }
+                                        setVersions(data.versions);
+                                        setSelectedDocumentId(doc.id_documento);
+                                        setShowVersionModal(true);
+                                      } catch (err) {
+                                        alert('No se pudo obtener el detalle de la versión. El documento no tiene versiones o hubo un error.');
+                                      }
+                                    }}
+                                  >
+                                    v{doc.version_actual}
+                                  </button>
+                                ) : (
+                                  <>v{doc.version_actual || '1'}</>
+                                )}
+                              </td>
+                              <td className="py-3">{doc.nombre_carpeta || 'Sin carpeta'}</td>
+                              <td className="py-3">
+                                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                                  doc.estado === 'publicado' 
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-300'
+                                }`}>
+                                  {doc.estado || 'Pendiente'}
+                                </span>
+                              </td>
+                              <td className="py-3">{doc.fecha_creacion ? new Date(doc.fecha_creacion).toLocaleDateString() : 'N/A'}</td>
+                              <td className="py-3">
+                                <button 
+                                  onClick={(e) => onUploadNewVersion(doc.id_documento, e)}
+                                  className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  title="Subir nueva versión"
+                                >
+                                  <Upload className="h-4 w-4 text-blue-500" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No hay documentos disponibles
+                    </div>
+                  )
+                )}
+                {tab === 'versiones' && selectedDocumentId && (
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <button
+                        className="text-blue-600 hover:underline mr-4"
+                        onClick={() => setTab('detalle')}
+                      >
+                        ← Volver a documentos
+                      </button>
+                      <h3 className="text-lg font-bold">Historial de Versiones</h3>
+                    </div>
+                    {versions.length === 0 ? (
+                      <div className="text-gray-500">No hay versiones para este documento.</div>
+                    ) : (
+                      <table className="w-full text-sm mb-4">
+                        <thead>
+                          <tr className="text-gray-500 dark:text-gray-400 border-b">
+                            <th className="py-2">Versión</th>
+                            <th className="py-2">Fecha</th>
+                            <th className="py-2">Usuario</th>
+                            <th className="py-2">Comentario</th>
+                            <th className="py-2">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {versions.map((v) => (
+                            <tr key={v.id_version} className="border-b">
+                              <td className="py-2 font-bold">v{v.numero_version}</td>
+                              <td className="py-2">{new Date(v.fecha_creacion).toLocaleString()}</td>
+                              <td className="py-2">{v.creado_por_usuario}</td>
+                              <td className="py-2">{v.comentario_version}</td>
+                              <td className="py-2">
+                                <button
+                                  className="text-blue-600 hover:underline"
+                                  onClick={() => {
+                                    setSelectedVersion(v);
+                                    setVersionPreviewUrl(v.ubicacion_almacenamiento_ruta);
+                                    setShowVersionModal(true);
+                                  }}
+                                >
+                                  Previsualizar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {showVersionModal && versions.length > 0 && selectedDocumentId && (
-        <VersionDetailModal
-          versions={versions}
-          onClose={() => setShowVersionModal(false)}
-          onPreviewClick={onPreviewClick}
-          documentId={selectedDocumentId}
-        />
+          {showVersionModal && versions.length > 0 && selectedDocumentId && (
+            <VersionDetailModal
+              versions={versions}
+              onClose={() => setShowVersionModal(false)}
+              onPreviewClick={onPreviewClick}
+              documentId={selectedDocumentId}
+            />
+          )}
+        </>
       )}
     </div>
   );

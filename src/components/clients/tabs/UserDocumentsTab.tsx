@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid } from 'recharts';
-import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle, Upload, Folder, ChevronDown, ChevronRight, Activity, ArrowLeft } from 'lucide-react';
+import { PieChart as PieChartIcon, FileText, Users, Clock, CheckCircle2, Loader2, UploadCloud, AlertCircle, Upload, Folder, ChevronDown, ChevronRight, Activity, ArrowLeft, RefreshCw, Shield } from 'lucide-react';
 import { clientService, type DocumentRequestsResponse, type ClientFoldersResponse, type ClientActivity, type ClientActivityResponse } from '@/lib/api/services/client.service';
 import { useParams } from 'next/navigation';
 import { DocumentUpload } from '@/components/documents/upload/DocumentUploadPage';
@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchDocumentContent } from '@/services/common/documentService';
 import { DocumentList } from './DocumentList';
 import { DocumentDetail } from './DocumentDetail';
+import isEqual from 'lodash/isEqual';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E42', '#EF4444'];
 
@@ -159,35 +160,45 @@ export function UserDocumentsTab() {
   // Polling function
   const checkProcessingStatus = useCallback(async () => {
     try {
-      const response = await clientService.getClientDocumentRequests(params.id as string);
-      const hasChanges = JSON.stringify(response?.solicitudes) !== JSON.stringify(data?.solicitudes);
-      if (hasChanges) {
-        setData(response);
-        // Actualizar también la estructura documental
+      const [requestsResponse, documentsResponse] = await Promise.all([
+        clientService.getClientDocumentRequests(params.id as string),
+        clientService.getClientDocuments(params.id as string)
+      ]);
+      
+      const hasRequestChanges = requestsResponse?.solicitudes.some(solicitud => 
+        solicitud.estado === 'recibido' && solicitud.id_documento_recibido !== null
+      );
+
+      const hasDocumentChanges = documentsResponse?.documentos.some((doc: ClientDocument) => 
+        doc.estado === 'publicado' || doc.estado === 'pendiente_revision' 
+      );
+
+      if (hasRequestChanges || hasDocumentChanges) {
+        toast.dismiss("processing-document");
+        setData(requestsResponse);
         const foldersResponse = await clientService.getClientFolders(params.id as string);
         setFoldersData(foldersResponse);
-        // ACTUALIZAR DOCUMENTOS DEL CLIENTE
-        await fetchClientDocuments();
+        setDocumentsData(documentsResponse);
         setPendingUploads(false);
-        toast.success("¡Documento procesado correctamente!", { id: "processing-document" });
-        toast.dismiss("processing-document");
+        toast.success("¡Documento procesado correctamente!");
         return;
       }
+
       if (pollingCount < maxPollingAttempts) {
         setPollingCount(prev => prev + 1);
         setTimeout(checkProcessingStatus, pollingInterval);
       } else {
-        setPendingUploads(false);
-        toast.info("El documento se ha subido pero aún está siendo procesado. Los cambios aparecerán pronto.", { id: "processing-document" });
         toast.dismiss("processing-document");
+        setPendingUploads(false);
+        toast.info("El documento se ha subido pero aún está siendo procesado...");
       }
     } catch (err) {
+      toast.dismiss("processing-document");
       console.error('Error al verificar estado:', err);
       setPendingUploads(false);
-      toast.error("Error al verificar el estado del procesamiento", { id: "processing-document" });
-      toast.dismiss("processing-document");
+      toast.error("Error al verificar el estado del procesamiento");
     }
-  }, [data?.solicitudes, params.id, pollingCount]);
+  }, [params.id, pollingCount]);
 
   // Callback para éxito de subida
   const handleUploadSuccess = () => {
@@ -218,7 +229,7 @@ export function UserDocumentsTab() {
           {foldersData.categorias.map((categoria: any) => {
             const carpetaEntry = Object.values(foldersData.documentos_por_carpeta).find((c: any) => c.nombre_carpeta === categoria.nombre);
             const documentos = carpetaEntry ? (carpetaEntry as any).documentos : [];
-            const isOpen = openFolders[categoria.id] ?? false; // Por defecto abiertas
+            const isOpen = openFolders[categoria.id] ?? true; // Por defecto abiertas
             return (
               <div key={categoria.id || categoria.nombre} className="border rounded p-2 bg-gray-50">
                 <div
@@ -288,6 +299,29 @@ export function UserDocumentsTab() {
     setShowUploadModal(true);
   };
 
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      // Actualizar todos los datos
+      const [requestsResponse, foldersResponse, documentsResponse] = await Promise.all([
+        clientService.getClientDocumentRequests(params.id as string),
+        clientService.getClientFolders(params.id as string),
+        clientService.getClientDocuments(params.id as string)
+      ]);
+      
+      setData(requestsResponse);
+      setFoldersData(foldersResponse);
+      setDocumentsData(documentsResponse);
+      
+      toast.success("Datos actualizados correctamente");
+    } catch (err) {
+      console.error('Error al actualizar:', err);
+      toast.error("Error al actualizar los datos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -354,6 +388,7 @@ export function UserDocumentsTab() {
         foldersError={foldersError}
         openFolders={openFolders}
         onToggleFolder={toggleFolder}
+        onRefresh={handleRefresh}
       />
 
       {showUploadModal && (

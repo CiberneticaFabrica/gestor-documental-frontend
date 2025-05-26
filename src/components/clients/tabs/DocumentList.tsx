@@ -6,6 +6,7 @@ import { documentService, type DocumentDetailsResponse } from '@/lib/api/service
 import type { DocumentVersion, DocumentVersionPreview } from '@/lib/api/services/document.service';
 import React from 'react';
 import { DocumentIdentificacionCliente } from './DocumentIdentificacionCliente';
+import { DocumentContratoCliente } from './DocumentContratoCliente';
 
 interface DocumentListProps {
   data: DocumentRequestsResponse;
@@ -149,23 +150,37 @@ export function DocumentList({
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
   const [versionPreviewUrl, setVersionPreviewUrl] = useState('');
   const [showIdentificacionView, setShowIdentificacionView] = useState(false);
+  const [showContratoView, setShowContratoView] = useState(false);
   const [identificacionData, setIdentificacionData] = useState<DocumentDetailsResponse | null>(null);
+  const [contratoData, setContratoData] = useState<DocumentDetailsResponse | null>(null);
 
   const handleDocumentClick = async (doc: ClientDocument) => {
-    // Check if the document is an identification document
-    if (doc.tipo_documento?.toLowerCase() === 'dni' || doc.tipo_documento?.toLowerCase() === 'pasaporte') {
+    // Check document type and handle accordingly
+    const docType = doc.tipo_documento?.toLowerCase();
+    const docTypeId = doc.id_tipo_documento?.toLowerCase();
+    
+    if (docType === 'dni' || docType === 'pasaporte' || docTypeId === 'dni' || docTypeId === 'pasaporte') {
       try {
         const response = await documentService.getDocumentDetails(doc.id_documento);
         setIdentificacionData(response);
         setShowIdentificacionView(true);
-        return; // Add this return to prevent calling onDocumentClick
+        return;
       } catch (error) {
         console.error('Error fetching document details:', error);
-        // Only call onDocumentClick if there's an error
+        onDocumentClick(doc);
+      }
+    } else if (docType === 'contrato cuenta' || docTypeId === 'contrato') {
+      try {
+        const response = await documentService.getDocumentDetails(doc.id_documento);
+        setContratoData(response);
+        setShowContratoView(true);
+        return;
+      } catch (error) {
+        console.error('Error fetching contract details:', error);
         onDocumentClick(doc);
       }
     } else {
-      // Default behavior for non-identification documents
+      // Default behavior for other document types
       onDocumentClick(doc);
     }
   };
@@ -246,6 +261,11 @@ export function DocumentList({
         <DocumentIdentificacionCliente
           documentData={identificacionData}
           onBack={() => setShowIdentificacionView(false)}
+        />
+      ) : showContratoView && contratoData ? (
+        <DocumentContratoCliente
+          documentData={contratoData}
+          onBack={() => setShowContratoView(false)}
         />
       ) : (
         <>

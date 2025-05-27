@@ -18,6 +18,20 @@ export interface Document {
   cliente_nombre: string;
 }
 
+export interface DocumentData {
+  nombre_completo: string;
+  numero_documento: string;
+  fecha_emision: string;
+  fecha_expiracion: string;
+  lugar_nacimiento: string;
+  genero: string;
+  pais_emision: string;
+  tipo_documento: string;
+  autoridad_emision: string;
+  nacionalidad: string;
+  codigo_pais: string;
+}
+
 export interface DocumentsResponse {
   documentos: Document[];
   pagination: {
@@ -39,6 +53,11 @@ export interface DocumentPreview {
   miniatura_nombre: string;
   tiene_miniatura: boolean;
   miniatura_es_icono: boolean;
+}
+
+export interface DocumentStatusResponse {
+  message: string;
+  id_documento: string;
 }
 
 export async function fetchDocuments(page: number = 1, pageSize: number = 1000): Promise<DocumentsResponse> {
@@ -83,4 +102,62 @@ export async function fetchDocumentContent(documentId: string): Promise<Document
     throw new Error('No se pudo obtener la URL del documento');
   }
   return data as DocumentPreview;
+}
+
+export async function fetchDocumentDownload(documentId: string): Promise<Blob> {
+  const token = localStorage.getItem("session_token");
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}/download`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Error al descargar el documento');
+  }
+
+  return response.blob();
+}
+
+export async function fetchDocumentData(documentId: string, data: DocumentData): Promise<void> {
+  const token = localStorage.getItem("session_token");
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}/data`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Error al actualizar los datos del documento');
+  }
+}
+
+export async function fetchDocumentStatus(documentId: string, estado: string): Promise<DocumentStatusResponse> {
+  const token = localStorage.getItem("session_token");
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL || "https://7xb9bklzff.execute-api.us-east-1.amazonaws.com/Prod"}/documents/${documentId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ estado }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Error al actualizar el estado del documento');
+  }
+
+  return response.json();
 } 

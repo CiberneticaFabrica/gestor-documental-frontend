@@ -261,6 +261,7 @@ export function DocumentList({
         <DocumentIdentificacionCliente
           documentData={identificacionData}
           onBack={() => setShowIdentificacionView(false)}
+          onRefresh={onRefresh}
         />
       ) : showContratoView && contratoData ? (
         <DocumentContratoCliente

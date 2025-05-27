@@ -132,58 +132,162 @@ export function UserDocumentsTab() {
     fetchClientDocuments();
   }, [params.id]);
 
-  useEffect(() => {
-    if (!documentsData) return;
-    documentsData.documentos.forEach(doc => {
-      if (!previews[doc.id_documento]) {
-        fetchDocumentContent(doc.id_documento)
-          .then(data => setPreviews(prev => ({
-            ...prev,
-            [doc.id_documento]: {
+  // Función auxiliar para actualizar previews de manera más eficiente
+  const updateDocumentPreviews = useCallback(async (documents: ClientDocument[]) => {
+    const documentsWithoutPreviews = documents.filter(doc => !previews[doc.id_documento]);
+    
+    // Procesar previews en lotes para evitar sobrecargar la API
+    const batchSize = 3;
+    for (let i = 0; i < documentsWithoutPreviews.length; i += batchSize) {
+      const batch = documentsWithoutPreviews.slice(i, i + batchSize);
+      
+      const previewPromises = batch.map(async (doc) => {
+        try {
+          const data = await fetchDocumentContent(doc.id_documento);
+          return {
+            docId: doc.id_documento,
+            preview: {
               url_documento: data.url_documento,
               url_miniatura: data.url_miniatura,
               mime_type: data.mime_type
             }
-          })))
-          .catch(() => setPreviews(prev => ({
-            ...prev,
-            [doc.id_documento]: {
+          };
+        } catch {
+          return {
+            docId: doc.id_documento,
+            preview: {
               url_documento: '',
               url_miniatura: '',
               mime_type: ''
             }
-          })));
+          };
+        }
+      });
+      
+      const results = await Promise.all(previewPromises);
+      
+      // Actualizar estado con los resultados del lote
+      setPreviews(prev => {
+        const updated = { ...prev };
+        results.forEach(({ docId, preview }) => {
+          updated[docId] = preview;
+        });
+        return updated;
+      });
+      
+      // Pequeña pausa entre lotes para no sobrecargar
+      if (i + batchSize < documentsWithoutPreviews.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
-    });
-  }, [documentsData]);
+    }
+  }, [previews]);
 
-  // Polling function
+  // useEffect optimizado que maneja los previews
+  useEffect(() => {
+    if (!documentsData?.documentos) return;
+    
+    updateDocumentPreviews(documentsData.documentos);
+  }, [documentsData, updateDocumentPreviews]);
+
+  // Polling function optimizada
   const checkProcessingStatus = useCallback(async () => {
     try {
-      const [requestsResponse, documentsResponse] = await Promise.all([
-        clientService.getClientDocumentRequests(params.id as string),
-        clientService.getClientDocuments(params.id as string)
-      ]);
+      // Solo obtener la lista actual de documentos
+      const documentsResponse = await clientService.getClientDocuments(params.id as string);
       
-      const hasRequestChanges = requestsResponse?.solicitudes.some(solicitud => 
-        solicitud.estado === 'recibido' && solicitud.id_documento_recibido !== null
-      );
-
-      const hasDocumentChanges = documentsResponse?.documentos.some((doc: ClientDocument) => 
-        doc.estado === 'publicado' || doc.estado === 'pendiente_revision' 
-      );
-
-      if (hasRequestChanges || hasDocumentChanges) {
-        toast.dismiss("processing-document");
-        setData(requestsResponse);
+      if (!documentsResponse || !documentsData) {
+        // Si no hay datos previos, actualizar todo
+        setDocumentsData(documentsResponse);
         const foldersResponse = await clientService.getClientFolders(params.id as string);
         setFoldersData(foldersResponse);
-        setDocumentsData(documentsResponse);
         setPendingUploads(false);
         toast.success("¡Documento procesado correctamente!");
         return;
       }
-
+  
+      // Comparar documentos actuales con los anteriores
+      const currentDocs = documentsData.documentos;
+      const newDocs = documentsResponse.documentos;
+      
+      // SOLO buscar documentos que han cambiado a estados procesados
+      const hasRelevantChanges = newDocs.some((newDoc: ClientDocument) => {
+        const existingDoc = currentDocs.find(doc => doc.id_documento === newDoc.id_documento);
+        
+        if (!existingDoc) {
+          // Documento completamente nuevo - SOLO considerar si ya está procesado
+          return newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision';
+        }
+        
+        // Documento existente - verificar cambio de estado a procesado
+        return (
+          existingDoc.estado !== newDoc.estado && 
+          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision')
+        ) || (
+          // También verificar cambios en versión para documentos ya procesados
+          existingDoc.version_actual !== newDoc.version_actual &&
+          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision')
+        );
+      });
+  
+      if (hasRelevantChanges) {
+        toast.dismiss("processing-document");
+        
+        // Actualizar documentos
+        setDocumentsData(documentsResponse);
+        
+        // Actualizar carpetas solo si es necesario
+        const foldersResponse = await clientService.getClientFolders(params.id as string);
+        setFoldersData(foldersResponse);
+        
+        // Limpiar previews para documentos actualizados y obtener nuevos
+        const updatedOrNewDocs = newDocs.filter((newDoc: ClientDocument) => {
+          const existingDoc = currentDocs.find(doc => doc.id_documento === newDoc.id_documento);
+          
+          if (!existingDoc) {
+            // Solo incluir documentos nuevos que ya están procesados
+            return newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision';
+          }
+          
+          // Incluir documentos existentes que han cambiado
+          return existingDoc.estado !== newDoc.estado || 
+                 existingDoc.version_actual !== newDoc.version_actual;
+        });
+        
+        // Actualizar previews para documentos modificados
+        updatedOrNewDocs.forEach((doc: ClientDocument) => {
+          // Limpiar preview anterior si existe
+          setPreviews(prev => {
+            const updated = { ...prev };
+            delete updated[doc.id_documento];
+            return updated;
+          });
+          
+          // Obtener nuevo preview
+          fetchDocumentContent(doc.id_documento)
+            .then(data => setPreviews(prev => ({
+              ...prev,
+              [doc.id_documento]: {
+                url_documento: data.url_documento,
+                url_miniatura: data.url_miniatura,
+                mime_type: data.mime_type
+              }
+            })))
+            .catch(() => setPreviews(prev => ({
+              ...prev,
+              [doc.id_documento]: {
+                url_documento: '',
+                url_miniatura: '',
+                mime_type: ''
+              }
+            })));
+        });
+        
+        setPendingUploads(false);
+        toast.success("¡Documento procesado correctamente!");
+        return;
+      }
+  
+      // Si no hay cambios relevantes, continuar polling
       if (pollingCount < maxPollingAttempts) {
         setPollingCount(prev => prev + 1);
         setTimeout(checkProcessingStatus, pollingInterval);
@@ -198,8 +302,7 @@ export function UserDocumentsTab() {
       setPendingUploads(false);
       toast.error("Error al verificar el estado del procesamiento");
     }
-  }, [params.id, pollingCount]);
-
+  }, [params.id, pollingCount, documentsData]);
   // Callback para éxito de subida
   const handleUploadSuccess = () => {
     setShowUploadModal(false);
@@ -211,6 +314,39 @@ export function UserDocumentsTab() {
       dismissible: true
     });
     setTimeout(checkProcessingStatus, pollingInterval);
+  };
+
+  // Función de refresh optimizada
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      
+      // Obtener datos en paralelo
+      const [documentsResponse, foldersResponse] = await Promise.all([
+        clientService.getClientDocuments(params.id as string),
+        clientService.getClientFolders(params.id as string)
+      ]);
+      
+      // Solo actualizar requests si es necesario para la vista actual
+      let requestsResponse = data;
+      if (!data) {
+        requestsResponse = await clientService.getClientDocumentRequests(params.id as string);
+        setData(requestsResponse);
+      }
+      
+      setDocumentsData(documentsResponse);
+      setFoldersData(foldersResponse);
+      
+      // Actualizar previews para nuevos documentos
+      updateDocumentPreviews(documentsResponse.documentos);
+      
+      toast.success("Datos actualizados correctamente");
+    } catch (err) {
+      console.error('Error al actualizar:', err);
+      toast.error("Error al actualizar los datos");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleFolder = (id: string) => {
@@ -297,29 +433,6 @@ export function UserDocumentsTab() {
     e.stopPropagation();
     setSelectedDocId(null);
     setShowUploadModal(true);
-  };
-
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      // Actualizar todos los datos
-      const [requestsResponse, foldersResponse, documentsResponse] = await Promise.all([
-        clientService.getClientDocumentRequests(params.id as string),
-        clientService.getClientFolders(params.id as string),
-        clientService.getClientDocuments(params.id as string)
-      ]);
-      
-      setData(requestsResponse);
-      setFoldersData(foldersResponse);
-      setDocumentsData(documentsResponse);
-      
-      toast.success("Datos actualizados correctamente");
-    } catch (err) {
-      console.error('Error al actualizar:', err);
-      toast.error("Error al actualizar los datos");
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (loading) {
@@ -409,4 +522,4 @@ export function UserDocumentsTab() {
       )}
     </div>
   );
-} 
+}

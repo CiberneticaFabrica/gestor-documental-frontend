@@ -107,17 +107,17 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                 <Image 
                   src={theme === 'dark' ? "/images/cybelexlogoblanco.png" : "/images/cyberlexlogo.png"} 
                   alt="Cyberlex" 
-                  width={400} 
+                  width={300} 
                   height={400} 
-                  className="h-9 mr-2"
+                  className="h-12 mr-2"
                 />
               ) : (
                 <Image 
                   src={theme === 'dark' ? "/images/cyberlexlogosintexto.png" : "/images/cyberlexlogosintexto.png"} 
                   alt="Cyberlex" 
-                  width={400} 
+                  width={300} 
                   height={400} 
-                  className="h-9 mr-2"
+                  className="h-12 mr-2"
                 />
               )}
             </div>

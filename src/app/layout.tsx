@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import ConnectivityMonitor from "@/components/ui/connectivity-monitor";
 import { Toaster } from 'sonner';
+import { ChatWidget } from "@/components/chatbot/ChatWidget";
 
 const inter = Roboto(
   {  weight: ['400', '500', '700'],
@@ -12,7 +13,7 @@ const inter = Roboto(
   });
 
 export const metadata: Metadata = {
-  title: "CyberLex",
+  title: "FlowCoreX",
   description: "Sistema de gestión documental",
   icons: {
     icon: '/favicon.ico',
@@ -37,6 +38,7 @@ export default function RootLayout({
             <ConnectivityMonitor />
             {children}
             <Toaster position="top-right" richColors />
+            <ChatWidget />
           </AuthProvider>
         </ThemeProvider>
       </body>

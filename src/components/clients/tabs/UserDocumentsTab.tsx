@@ -192,12 +192,16 @@ export function UserDocumentsTab() {
   // Polling function optimizada
   const checkProcessingStatus = useCallback(async () => {
     try {
-      // Solo obtener la lista actual de documentos
-      const documentsResponse = await clientService.getClientDocuments(params.id as string);
+      // Obtener documentos y solicitudes en paralelo
+      const [documentsResponse, requestsResponse] = await Promise.all([
+        clientService.getClientDocuments(params.id as string),
+        clientService.getClientDocumentRequests(params.id as string)
+      ]);
       
       if (!documentsResponse || !documentsData) {
         // Si no hay datos previos, actualizar todo
         setDocumentsData(documentsResponse);
+        setData(requestsResponse);
         const foldersResponse = await clientService.getClientFolders(params.id as string);
         setFoldersData(foldersResponse);
         setPendingUploads(false);
@@ -232,8 +236,9 @@ export function UserDocumentsTab() {
       if (hasRelevantChanges) {
         toast.dismiss("processing-document");
         
-        // Actualizar documentos
+        // Actualizar documentos y solicitudes
         setDocumentsData(documentsResponse);
+        setData(requestsResponse);
         
         // Actualizar carpetas solo si es necesario
         const foldersResponse = await clientService.getClientFolders(params.id as string);
@@ -322,18 +327,13 @@ export function UserDocumentsTab() {
       setLoading(true);
       
       // Obtener datos en paralelo
-      const [documentsResponse, foldersResponse] = await Promise.all([
+      const [documentsResponse, foldersResponse, requestsResponse] = await Promise.all([
         clientService.getClientDocuments(params.id as string),
-        clientService.getClientFolders(params.id as string)
+        clientService.getClientFolders(params.id as string),
+        clientService.getClientDocumentRequests(params.id as string)
       ]);
       
-      // Solo actualizar requests si es necesario para la vista actual
-      let requestsResponse = data;
-      if (!data) {
-        requestsResponse = await clientService.getClientDocumentRequests(params.id as string);
-        setData(requestsResponse);
-      }
-      
+      setData(requestsResponse);
       setDocumentsData(documentsResponse);
       setFoldersData(foldersResponse);
       

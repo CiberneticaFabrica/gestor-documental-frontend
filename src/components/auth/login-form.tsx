@@ -54,8 +54,8 @@ export default function LoginForm() {
                 src="/images/cybelexlogoblanco.png" 
                 alt="CyberLex" 
                 width={400} 
-                height={400} 
-                className="h-20 mr-2"
+                height={500} 
+                className="h-22 mr-2"
               />
          
             </div>

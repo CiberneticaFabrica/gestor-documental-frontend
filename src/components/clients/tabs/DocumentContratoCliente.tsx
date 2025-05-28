@@ -1,25 +1,40 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle, AlertTriangle, Clock, User, FileText, Shield, Calendar, MapPin, Eye, Download, History, Info } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { fetchDocumentStatus } from '@/services/common/documentService';
 
 interface DocumentContratoClienteProps {
   documentData: any;
   onBack: () => void;
+  onRefresh?: () => void;
 }
 
-export function DocumentContratoCliente({ documentData, onBack }: DocumentContratoClienteProps) {
+export function DocumentContratoCliente({ documentData, onBack, onRefresh }: DocumentContratoClienteProps) {
   const [showFullText, setShowFullText] = useState(false);
   const { documento, tipo_documento, version_actual, cliente, documento_especializado, analisis_ia, historial_procesamiento, validacion } = documentData;
 
-  const handleApprove = () => {
-    console.log('Contrato aprobado');
+  const handleApprove = async () => {
+    try {
+      const response = await fetchDocumentStatus(documento.id, 'publicado');
+      toast.success(`Documento aprobado - ID: ${response.id_documento}`);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast.error('Error al aprobar el documento');
+    }
   };
 
-  const handleReject = () => {
-    console.log('Contrato rechazado');
+  const handleReject = async () => {
+    try {
+      const response = await fetchDocumentStatus(documento.id, 'rechazado');
+      toast.error(`Documento rechazado - ID: ${response.id_documento}`);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast.error('Error al rechazar el documento');
+    }
   };
 
   const getStatusColor = (estado: string) => {
-    switch (estado.toLowerCase()) {
+    switch (estado?.toLowerCase()) {
       case 'publicado': return 'bg-green-100 text-green-800 border-green-200';
       case 'pendiente': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'rechazado': return 'bg-red-100 text-red-800 border-red-200';
@@ -28,12 +43,17 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
   };
 
   const getRiskColor = (riesgo: string) => {
-    switch (riesgo.toLowerCase()) {
+    switch (riesgo?.toLowerCase()) {
       case 'bajo': return 'text-green-600 bg-green-50';
       case 'medio': return 'text-yellow-600 bg-yellow-50';
       case 'alto': return 'text-red-600 bg-red-50';
       default: return 'text-gray-600 bg-gray-50';
     }
+  };
+
+  const handleBack = () => {
+    if (onRefresh) onRefresh();
+    onBack();
   };
 
   return (
@@ -43,13 +63,13 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={onBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
+              <button onClick={handleBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
                 <ArrowLeft className="h-5 w-5" />
                 Volver
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Revisión de Contrato</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Documento de Contrato • {tipo_documento.nombre}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Documento de Contrato • {tipo_documento?.nombre || 'Sin tipo'}</p>
               </div>
             </div>
             
@@ -80,11 +100,11 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
                     </div>
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Información del Contrato</h2>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {documento.codigo}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Código: {documento?.codigo || 'Sin código'}</p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(documento.estado)}`}>
-                    {documento.estado.toUpperCase()}
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(documento?.estado)}`}>
+                    {documento?.estado?.toUpperCase() || 'SIN ESTADO'}
                   </span>
                 </div>
               </div>
@@ -94,24 +114,24 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
                   <div className="space-y-4">
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2">Detalles del Contrato</h4>
-                      {documento_especializado?.documento_contrato ? (
+                      {analisis_ia?.entidades_detectadas ? (
                         <div className="space-y-2 text-sm">
-                          <div>
-                            <span className="text-gray-600 dark:text-gray-400">Tipo de contrato:</span>
-                            <p className="font-semibold text-gray-900 dark:text-white">
-                              {documento_especializado.documento_contrato.tipo_contrato}
-                            </p>
-                          </div>
                           <div>
                             <span className="text-gray-600 dark:text-gray-400">Número de contrato:</span>
                             <p className="font-mono font-medium text-gray-900 dark:text-white">
-                              {documento_especializado.documento_contrato.numero_contrato}
+                              {analisis_ia.entidades_detectadas.numero_contrato?.answer || 'No disponible'}
                             </p>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Estado:</span>
+                            <span className="text-gray-600 dark:text-gray-400">Monto del préstamo:</span>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {documento_especializado.documento_contrato.estado_contrato}
+                              {analisis_ia.entidades_detectadas.monto_prestamo?.answer || 'No disponible'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Tasa de interés:</span>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {analisis_ia.entidades_detectadas.tasa_interes?.answer || 'No disponible'}
                             </p>
                           </div>
                         </div>
@@ -126,24 +146,24 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
                   <div className="space-y-4">
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2">Fechas Importantes</h4>
-                      {documento_especializado?.documento_contrato ? (
+                      {analisis_ia?.entidades_detectadas ? (
                         <div className="space-y-2 text-sm">
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Fecha de firma:</span>
+                            <span className="text-gray-600 dark:text-gray-400">Fecha del contrato:</span>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {new Date(documento_especializado.documento_contrato.fecha_firma).toLocaleDateString('es-ES')}
+                              {analisis_ia.entidades_detectadas.fecha_contrato?.answer || 'No disponible'}
                             </p>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Fecha de inicio:</span>
+                            <span className="text-gray-600 dark:text-gray-400">Plazo del préstamo:</span>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {new Date(documento_especializado.documento_contrato.fecha_inicio).toLocaleDateString('es-ES')}
+                              {analisis_ia.entidades_detectadas.plazo_meses?.answer || 'No disponible'} meses
                             </p>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Fecha de vencimiento:</span>
+                            <span className="text-gray-600 dark:text-gray-400">Cuota mensual:</span>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {new Date(documento_especializado.documento_contrato.fecha_vencimiento).toLocaleDateString('es-ES')}
+                              {analisis_ia.entidades_detectadas.cuota_mensual?.answer || 'No disponible'}
                             </p>
                           </div>
                         </div>
@@ -174,13 +194,13 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
                     </div>
                     <div className="text-right">
                       <div className={`text-2xl font-bold ${
-                        parseFloat(validacion.confianza_extraccion) < 0.5 
+                        parseFloat(validacion?.confianza_extraccion || '0') < 0.5 
                           ? 'text-red-600 dark:text-red-400'
-                          : parseFloat(validacion.confianza_extraccion) < 0.75
+                          : parseFloat(validacion?.confianza_extraccion || '0') < 0.75
                             ? 'text-yellow-600 dark:text-yellow-400' 
                             : 'text-purple-600 dark:text-purple-400'
                       }`}>
-                        {(parseFloat(validacion.confianza_extraccion) * 100).toFixed(0)}%
+                        {(parseFloat(validacion?.confianza_extraccion || '0') * 100).toFixed(0)}%
                       </div>
                       <div className="text-xs text-gray-500">Confianza</div>
                     </div>
@@ -190,18 +210,18 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-gray-900 dark:text-white">Texto Extraído</h4>
-                    {analisis_ia?.texto_extraido && (
+                    {analisis_ia?.texto_extraido_preview && (
                       <button onClick={() => setShowFullText(!showFullText)} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">
                         {showFullText ? 'Ocultar' : 'Ver completo'}
                       </button>
                     )}
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                    {analisis_ia?.texto_extraido ? (
+                    {analisis_ia?.texto_extraido_preview ? (
                       <p className="text-sm font-mono text-gray-700 dark:text-gray-300 leading-relaxed">
                         {showFullText 
-                          ? analisis_ia.texto_extraido 
-                          : `${analisis_ia.texto_extraido.substring(0, 150)}...`
+                          ? analisis_ia.texto_extraido_full 
+                          : analisis_ia.texto_extraido_preview
                         }
                       </p>
                     ) : (
@@ -239,16 +259,16 @@ export function DocumentContratoCliente({ documentData, onBack }: DocumentContra
               <div className="space-y-3">
                 <div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Nombre:</span>
-                  <p className="font-medium text-gray-900 dark:text-white">{cliente.nombre}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{cliente?.nombre || 'No disponible'}</p>
                 </div>
                 <div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Código:</span>
-                  <p className="font-mono text-sm text-gray-900 dark:text-white">{cliente.codigo}</p>
+                  <p className="font-mono text-sm text-gray-900 dark:text-white">{cliente?.codigo || 'No disponible'}</p>
                 </div>
                 <div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">Nivel de riesgo:</span>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ml-2 ${getRiskColor(cliente.nivel_riesgo)}`}>
-                    {cliente.nivel_riesgo.toUpperCase()}
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ml-2 ${getRiskColor(cliente?.nivel_riesgo)}`}>
+                    {cliente?.nivel_riesgo?.toUpperCase() || 'NO DISPONIBLE'}
                   </span>
                 </div>
               </div>

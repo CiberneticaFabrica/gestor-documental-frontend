@@ -90,18 +90,35 @@ export function ChatWidget() {
   };
 
   const renderMessageContent = (message: Message) => {
+    // Función para formatear el texto con saltos de línea
+    const formatText = (text: string) => {
+      return text.split('\n').map((line, index) => (
+        <React.Fragment key={index}>
+          {line}
+          {index < text.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ));
+    };
+
     return (
       <div className="space-y-2">
-        <p className="text-sm">{message.text}</p>
+        <div className="text-sm whitespace-pre-line">
+          {formatText(message.text)}
+        </div>
         {message.entities?.client_ids && message.entities.client_ids.length > 0 && (
-          <div className="mt-2">
-            <button
-              onClick={() => handleNavigation(message.entities!.client_ids![0])}
-              className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              Ver documentos del cliente
-            </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {message.entities.client_ids.map((clientId, index) => (
+              <button
+                key={clientId}
+                onClick={() => handleNavigation(clientId)}
+                className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {message.entities?.client_names?.[index] 
+                  ? `Ver documentos de ${message.entities.client_names[index]}`
+                  : 'Ver documentos del cliente'}
+              </button>
+            ))}
           </div>
         )}
         <span className="text-xs opacity-70 mt-1 block">

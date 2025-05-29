@@ -124,7 +124,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                   alt="Cyberlex" 
                   width={300} 
                   height={400} 
-                  className="h-12 mr-2"
+                  className="h-14 mr-2"
                 />
               ) : (
                 <Image 
@@ -132,7 +132,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                   alt="Cyberlex" 
                   width={300} 
                   height={400} 
-                  className="h-12 mr-2"
+                  className="h-14 mr-2"
                 />
               )}
             </div>

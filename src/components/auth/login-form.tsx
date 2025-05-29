@@ -47,27 +47,23 @@ export default function LoginForm() {
     <div className="relative flex min-h-screen overflow-hidden">
       {/* Fondo dividido */}
       <div className="absolute inset-0 flex">
-        <div className="w-1/2 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-10 text-white hidden md:flex flex-col justify-center py-16">
+        <div className="hidden md:flex md:w-1/2 xl:w-2/5 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-10 text-white flex-col justify-center py-16">
           <div>
             <div className="flex items-center gap-2 mb-1">
-            <Image 
+              <Image 
                 src="/images/cybelexlogoblanco.png" 
                 alt="CyberLex" 
                 width={400} 
                 height={500} 
                 className="h-22 mr-2"
               />
-         
             </div>
-     
-         
             <h2 className="text-2xl font-bold mb-2 leading-tight">Inicia sesión y gestiona tus documentos</h2>
             <p className="mb-6 text-blue-100 text-base leading-relaxed max-w-md">
               Accede a tu cuenta para administrar, cargar y consultar documentos de manera segura y eficiente.
               Con Gestor Doc puedes organizar archivos, controlar el acceso de tu equipo, gestionar vencimientos,
               generar reportes de auditoría y mantener todo centralizado, con respaldo automático y trazabilidad completa.
             </p>
-
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="bg-blue-800 rounded-full p-1.5">
@@ -88,25 +84,21 @@ export default function LoginForm() {
                 <span className="text-sm">Gestión de usuarios y permisos</span>
               </div>
             </div>
-
             <div className="text-xs text-blue-200 mt-10">© 2024 Gestor Doc. Todos los derechos reservados.</div>
           </div>
         </div>
-
-        <div className="w-1/2 bg-white  hidden md:block  ">
-        <svg className="pointer-events-none absolute inset-0" viewBox="0 0 960 540" width="100%" height="100%" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-        <g className="opacity-5 MuiBox-root muiltr-0" fill="none" stroke="currentColor" stroke-width="100">
-          <circle r="234" cx="196" cy="23"></circle><circle r="234" cx="790" cy="491"></circle></g>
+        <div className="hidden md:block md:w-1/2 xl:w-3/5 bg-white relative">
+          <svg className="pointer-events-none absolute inset-0" viewBox="0 0 960 540" width="100%" height="100%" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+            <g className="opacity-5 MuiBox-root muiltr-0" fill="none" stroke="currentColor" strokeWidth="100">
+              <circle r="234" cx="196" cy="23"></circle><circle r="234" cx="790" cy="491"></circle>
+            </g>
           </svg>
         </div>
       </div>
-
       {/* Contenedor del formulario centrado */}
-      <div className="relative z-10 flex items-center justify-center w-full px-4 ">
- 
-        <div className="bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-xl p-12 w-full max-w-xl">
+      <div className="relative z-10 flex items-center justify-center w-full px-4 min-h-screen login-form-mr">
+        <div className="bg-white shadow-lg hover:shadow-2xl transition-all duration-300 rounded-xl p-6 sm:p-10 md:p-12 w-full max-w-lg mx-auto">
           <div className="mb-6 text-center">
-    
             <h2 className="text-3xl font-bold text-gray-900">
               Bienvenido de nuevo  
             </h2>
@@ -114,7 +106,6 @@ export default function LoginForm() {
               Ingresa tus credenciales para acceder
             </p>
           </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Usuario */}
             <div>
@@ -137,7 +128,6 @@ export default function LoginForm() {
                 />
               </div>
             </div>
-
             {/* Contraseña */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700  mb-1">
@@ -171,7 +161,6 @@ export default function LoginForm() {
                 </button>
               </div>
             </div>
-
             {/* Recordarme / Link */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div className="flex items-center">
@@ -196,7 +185,6 @@ export default function LoginForm() {
                 </Link>
               </div>
             </div>
-
             {/* Botón de login */}
             <Button
               type="submit"
@@ -205,17 +193,8 @@ export default function LoginForm() {
             >
                <Lock className="h-4 w-4 mr-2" />
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
-             
             </Button>
           </form>
-
-          {/* Registro 
-          <div className="mt-8 text-center text-sm text-gray-500 ">
-            ¿No tienes una cuenta?{' '}
-            <Link href="/auth/register" className="text-blue-600 hover:underline">
-              Regístrate
-            </Link>
-          </div>*/}
         </div>
       </div>
     </div>

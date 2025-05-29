@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Filter,
@@ -20,12 +20,17 @@ import { clientService, type Client } from '@/lib/api/services/client.service';
 import { ClientFiltersBar } from '@/components/clients/clientFiltersBar';
 import { ClientCard } from '@/components/clients/client-card';
 import { NewClientForm } from '@/components/clients/new-client-form';
+import debounce from 'lodash/debounce';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
+import { Modal } from '@/components/ui/modal';
 
 type SortField = keyof Client;
 type SortDirection = 'asc' | 'desc';
 
 export function ClientsTable() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('nombre_razon_social');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
@@ -40,15 +45,34 @@ export function ClientsTable() {
   const [nivelRiesgo, setNivelRiesgo] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; client: Client | null }>({ open: false, client: null });
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     loadClients();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, debouncedSearchTerm, estado, tipoCliente, nivelRiesgo]);
 
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      const response = await clientService.getClients(currentPage, pageSize);
+      const response = await clientService.getClients(
+        currentPage, 
+        pageSize,
+        {
+          search: debouncedSearchTerm,
+          estado,
+          tipo_cliente: tipoCliente,
+          nivel_riesgo: nivelRiesgo
+        }
+      );
       setClients(response.clientes);
       setTotalPages(response.pagination.total_pages);
       setTotalItems(response.pagination.total);
@@ -74,24 +98,16 @@ export function ClientsTable() {
     }
   };
 
-  const filteredClients = clients
-    .filter((client) => {
-      const searchMatch = client.nombre_razon_social.toLowerCase().includes(searchTerm.toLowerCase());
-      const estadoMatch = !estado || client.estado === estado;
-      const tipoMatch = !tipoCliente || client.tipo_cliente === tipoCliente;
-      const riesgoMatch = !nivelRiesgo || client.nivel_riesgo === nivelRiesgo;
-      return searchMatch && estadoMatch && tipoMatch && riesgoMatch;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      const direction = sortDirection === 'asc' ? 1 : -1;
+  const sortedClients = clients.sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+    const direction = sortDirection === 'asc' ? 1 : -1;
 
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return direction * aValue.localeCompare(bValue);
-      }
-      return 0;
-    });
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return direction * aValue.localeCompare(bValue);
+    }
+    return 0;
+  });
 
   const renderPagination = () => {
     const pages = [];
@@ -174,6 +190,62 @@ export function ClientsTable() {
     );
   };
 
+  // Exportar todos los clientes filtrados a Excel
+  const handleExport = async () => {
+    try {
+      setIsLoading(true);
+      // Pedir hasta 10,000 clientes filtrados
+      const response = await clientService.getClients(
+        1,
+        10000,
+        {
+          search: debouncedSearchTerm,
+          estado,
+          tipo_cliente: tipoCliente,
+          nivel_riesgo: nivelRiesgo
+        }
+      );
+      const exportData = response.clientes.map((client) => ({
+        'Código': client.codigo_cliente,
+        'Nombre/Razón Social': client.nombre_razon_social,
+        'Tipo': client.tipo_cliente,
+        'Documento': client.documento_identificacion,
+        'Estado': client.estado,
+        'Segmento': client.segmento,
+        'Segmento Bancario': client.segmento_bancario,
+        'Nivel de Riesgo': client.nivel_riesgo,
+        'Estado Documental': client.estado_documental,
+        'Fecha Alta': client.fecha_alta,
+        'Gestor Principal': client.gestor_principal_nombre,
+        'Gestor KYC': client.gestor_kyc_nombre,
+        'Email': client.datos_contacto?.email,
+        'Teléfono': client.datos_contacto?.telefono,
+        'Dirección': client.datos_contacto?.direccion
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+      XLSX.writeFile(workbook, 'clientes.xlsx');
+    } catch (error) {
+      console.error('Error exportando clientes:', error);
+      alert('Error exportando clientes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInactivate = async () => {
+    if (!confirmModal.client) return;
+    try {
+      await clientService.updateClient(confirmModal.client.id_cliente, { estado: 'inactivo' });
+      toast.success('Cliente inactivado');
+      setConfirmModal({ open: false, client: null });
+      loadClients();
+    } catch (error) {
+      toast.error('Error al inactivar el cliente');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <ClientFiltersBar
@@ -186,7 +258,7 @@ export function ClientsTable() {
         nivelRiesgo={nivelRiesgo}
         onNivelRiesgoChange={setNivelRiesgo}
         onAddClient={() => setIsNewClientModalOpen(true)}
-        onExport={() => {/* TODO: Implementar */}}
+        onExport={handleExport}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />
@@ -222,14 +294,14 @@ export function ClientsTable() {
                     Cargando clientes...
                   </td>
                 </tr>
-              ) : filteredClients.length === 0 ? (
+              ) : sortedClients.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
                     No se encontraron clientes
                   </td>
                 </tr>
               ) : (
-                filteredClients.map((client) => (
+                sortedClients.map((client) => (
                   <tr 
                     key={client.id_cliente} 
                     className="hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer text-gray-900 dark:text-gray-100 transition-colors duration-150"
@@ -304,22 +376,22 @@ export function ClientsTable() {
                             menu.className = 'absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50';
                             menu.innerHTML = `
                               <div class="py-1">
-                                <button class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                  Descargar
-                                </button>
+                                <button class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Descargar</button>
+                                <button class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-700">Inactivar</button>
                               </div>
                             `;
-                            
                             const handleClick = (e: MouseEvent) => {
                               const target = e.target as HTMLElement;
                               if (target.textContent?.includes('Descargar')) {
                                 // TODO: Implementar descarga
                                 console.log('Descargar documento:', client.id_cliente);
                               }
+                              if (target.textContent?.includes('Inactivar')) {
+                                setConfirmModal({ open: true, client });
+                              }
                               document.removeEventListener('click', handleClick);
                               menu.remove();
                             };
-                            
                             document.addEventListener('click', handleClick);
                             e.currentTarget.parentElement?.appendChild(menu);
                           }}
@@ -345,16 +417,42 @@ export function ClientsTable() {
             <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-4">
               Cargando clientes...
             </div>
-          ) : filteredClients.length === 0 ? (
+          ) : sortedClients.length === 0 ? (
             <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-4">
               No se encontraron clientes
             </div>
           ) : (
-            filteredClients.map((client) => (
+            sortedClients.map((client) => (
               <ClientCard key={client.id_cliente} client={client} />
             ))
           )}
         </div>
+      )}
+
+      {/* Modal de confirmación de inactivación */}
+      {confirmModal.open && confirmModal.client && (
+        <Modal onClose={() => setConfirmModal({ open: false, client: null })}>
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">¿Estás seguro de inactivar este cliente?</div>
+            <div className="text-gray-600 dark:text-gray-300 text-center">
+              {confirmModal.client.nombre_razon_social}
+            </div>
+            <div className="flex gap-4 mt-2">
+              <button
+                onClick={handleInactivate}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Sí, inactivar
+              </button>
+              <button
+                onClick={() => setConfirmModal({ open: false, client: null })}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

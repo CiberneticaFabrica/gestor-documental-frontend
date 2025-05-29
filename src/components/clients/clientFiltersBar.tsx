@@ -61,8 +61,9 @@ export function ClientFiltersBar({
           onChange={e => onTipoClienteChange(e.target.value)}
         >
           <option value="">Todos los tipos</option>
-          <option value="persona_natural">Persona Natural</option>
-          <option value="persona_juridica">Persona Jurídica</option>
+          <option value="persona_fisica">Persona Natural</option>
+          <option value="empresa">Persona Jurídica</option>
+          <option value="organismo_publico">Organismo Público</option>
         </select>
         <select
           aria-label="Filtrar por nivel de riesgo"

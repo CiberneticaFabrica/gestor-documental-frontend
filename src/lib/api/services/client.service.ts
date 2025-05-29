@@ -185,11 +185,49 @@ export interface ClientActivityResponse {
   activities: ClientActivity[];
 }
 
+interface ClientFilters {
+  search?: string;
+  estado?: string;
+  tipo_cliente?: string;
+  nivel_riesgo?: string;
+  segmento_bancario?: string;
+}
+
 export const clientService = {
-   
-  getClients: async (page: number = 1, pageSize: number = 10) => {
-    const { data } = await axiosInstance.get<ClientsResponse>(`/clients?page=${page}&page_size=${pageSize}`);
-    return data;
+  getClients: async (page: number = 1, pageSize: number = 10, filters?: ClientFilters) => {
+    // Construir los parámetros de consulta
+    
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', pageSize.toString());
+    
+    if (filters?.search) {
+      queryParams.append('search', filters.search);
+    }
+    if (filters?.estado) {
+      queryParams.append('estado', filters.estado);
+    }
+    if (filters?.tipo_cliente) {
+      queryParams.append('tipo_cliente', filters.tipo_cliente);
+    }
+    if (filters?.nivel_riesgo) {
+      queryParams.append('nivel_riesgo', filters.nivel_riesgo);
+    }
+    if (filters?.segmento_bancario) {
+      queryParams.append('segmento_bancario', filters.segmento_bancario);
+    }
+
+    const url = `/clients?${queryParams.toString()}`;
+    console.log('Request URL:', url);
+
+    try {
+      const { data } = await axiosInstance.get<ClientsResponse>(url);
+      console.log('API Response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      throw error;
+    }
   },
 
   async getClientDetail(id: string): Promise<ClientDetailResponse> {
@@ -249,5 +287,15 @@ export const clientService = {
   }> {
     const { data } = await axiosInstance.get(`/clients/${clientId}/documents`);
     return data;
+  },
+
+  async updateClient(id: string, updateData: Partial<ClientRequest>): Promise<Client> {
+    try {
+      const { data } = await axiosInstance.put<Client>(`/clients/${id}`, updateData);
+      return data;
+    } catch (error) {
+      console.error('Error updating client:', error);
+      throw error;
+    }
   }
 }; 

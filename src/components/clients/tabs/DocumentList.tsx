@@ -158,7 +158,7 @@ export function DocumentList({
     // Check document type and handle accordingly
     const docType = doc.tipo_documento?.toLowerCase();
     const docTypeId = doc.id_tipo_documento?.toLowerCase();
-    
+   
     if (docType === 'dni' || docType === 'pasaporte' || docTypeId === 'dni' || docTypeId === 'pasaporte') {
       try {
         const response = await documentService.getDocumentDetails(doc.id_documento);
@@ -169,7 +169,7 @@ export function DocumentList({
         console.error('Error fetching document details:', error);
         onDocumentClick(doc);
       }
-    } else if (docType === 'contrato cuenta' || docTypeId === 'contrato') {
+    } else if (docType === 'contrato cuenta' || docTypeId === 'contrato' || docType === 'formulario kyc' || docTypeId === 'formulario kyc') {
       try {
         const response = await documentService.getDocumentDetails(doc.id_documento);
         setContratoData(response);
@@ -267,6 +267,7 @@ export function DocumentList({
         <DocumentContratoCliente
           documentData={contratoData}
           onBack={() => setShowContratoView(false)}
+          onRefresh={onRefresh}
         />
       ) : (
         <>

@@ -26,6 +26,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
     fecha_expiracion: '',
     pais_emision: ''
   });
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   console.log('Document Data:', documentData);
 
@@ -260,7 +261,8 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
           <img
             src={previewData.url_documento}
             alt={previewData.nombre_archivo}
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full object-contain cursor-zoom-in"
+            onClick={() => setIsImageZoomed(true)}
             onError={(e) => {
               console.error('Error loading image:', e);
               setError('Error al cargar la imagen');
@@ -297,20 +299,43 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Panel lateral derecho fijo para la imagen */}
       {showPreview && (
-        <div className="fixed right-0 top-0 h-full w-[400px] bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700">
-          <div className="absolute top-4 left-4 z-10">
-            <button
-              onClick={() => setShowPreview(false)}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full shadow-sm hover:shadow-md transition-all"
-              title="Cerrar vista previa"
+        <>
+          <div className="fixed right-0 top-0 h-full w-[400px] bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-40">
+            <div className="absolute top-4 left-4 z-10">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full shadow-sm hover:shadow-md transition-all"
+                title="Cerrar vista previa"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="h-full overflow-y-auto p-6">
+              {renderPreview()}
+            </div>
+          </div>
+          {isImageZoomed && previewData && previewData.mime_type.startsWith('image/') && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80"
+              onClick={() => setIsImageZoomed(false)}
             >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="h-full overflow-y-auto p-6">
-            {renderPreview()}
-          </div>
-        </div>
+              <div className="relative" onClick={e => e.stopPropagation()}>
+                <button
+                  onClick={() => setIsImageZoomed(false)}
+                  className="absolute top-2 right-2 p-2 bg-white bg-opacity-80 rounded-full shadow hover:bg-opacity-100 transition"
+                  title="Cerrar imagen ampliada"
+                >
+                  <X className="h-6 w-6 text-gray-700" />
+                </button>
+                <img
+                  src={previewData.url_documento}
+                  alt={previewData.nombre_archivo}
+                  className="max-w-3xl max-h-[80vh] rounded shadow-lg"
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Contenido principal con margen derecho cuando el preview está activo */}
@@ -720,16 +745,16 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                     <Eye className="h-4 w-4" />
                     {showPreview ? 'Ocultar Imagen' : 'Ver Imagen Original'}
                   </button>
-                  <button 
+                  {/*<button 
                     onClick={handleDownload}
                     className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Descargar Documento
                   </button>
-                  <button className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                  {/*<button className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
                     Generar Reporte
-                  </button>
+                  </button>*/}
                 </div>
               </div>
 

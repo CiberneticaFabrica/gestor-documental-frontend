@@ -24,30 +24,45 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { clientService } from '@/lib/api/services/client.service';
 
-const mainMenu = [
+type MenuItem = {
+  name: string;
+  href: string;
+  icon: any;
+  soon?: boolean;
+};
+
+const mainMenu: MenuItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Reportes', href: '/reports', icon: BarChart3 },
+  { name: 'Due Diligence', href: '#', icon: Shield, soon: true },
+  { name: 'Conoce a tu Cliente (KYC)', href: '#', icon: Users, soon: true },
 ];
 
-const documentsSubmenu = [
+//const documentsSubmenu: MenuItem[] = [
+//  { name: 'Explorador', href: '/documents/explorer', icon: FileText },
+//  { name: 'Historial', href: '/documents/history', icon: Clock },
+//  { name: 'Rechazados', href: '/documents/rejected', icon: AlertCircle },
+//  { name: 'Subir', href: '/documents/upload', icon: Upload },
+//  { name: 'Verificación', href: '/documents/verification', icon: CheckCircle },
+//];
+
+const documentsSubmenu: MenuItem[] = [
   { name: 'Explorador', href: '/documents/explorer', icon: FileText },
-  { name: 'Historial', href: '/documents/history', icon: Clock },
-  { name: 'Rechazados', href: '/documents/rejected', icon: AlertCircle },
   { name: 'Subir', href: '/documents/upload', icon: Upload },
-  { name: 'Verificación', href: '/documents/verification', icon: CheckCircle },
+   
 ];
 
-const adminMenu = [
+const adminMenu: MenuItem[] = [
   { name: 'Usuarios', href: '/admin/users', icon: Users },
   { name: 'Carpetas', href: '/admin/folders', icon: FolderArchive },
   { name: 'Roles', href: '/admin/roles', icon: Shield },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
-const auditMenu = [
-  { name: 'Auditoría General', href: '/audits/general', icon: FileText },
+const auditMenu: MenuItem[] = [
+  { name: 'Auditoría Clientes', href: '/audits/documentos', icon: FileText },
   { name: 'Auditoría Seguridad', href: '/audits/seguridad', icon: Shield },
 ];
 
@@ -151,6 +166,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     label={item.name}
                     active={pathname === item.href}
                     minimized={minimized}
+                    soon={item.soon}
                   />
                 ))}
               </div>
@@ -219,6 +235,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     label={item.name}
                     active={pathname === item.href}
                     minimized={minimized}
+                    soon={item.soon}
                   />
                 ))}
               </div>
@@ -381,6 +398,7 @@ function SidebarLink({
   small = false,
   showDot = false,
   minimized = false,
+  soon = false,
 }: {
   icon: any,
   href: string,
@@ -389,6 +407,7 @@ function SidebarLink({
   small?: boolean,
   showDot?: boolean,
   minimized?: boolean,
+  soon?: boolean,
 }) {
   return (
     <Link
@@ -422,6 +441,9 @@ function SidebarLink({
       >
         {label}
       </span>
+      {soon && (
+        <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Soon</span>
+      )}
     </Link>
   );
 }

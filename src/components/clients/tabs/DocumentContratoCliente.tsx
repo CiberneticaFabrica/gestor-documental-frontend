@@ -182,7 +182,7 @@ export function DocumentContratoCliente({ documentData: initialDocumentData, onB
       {/* Panel lateral derecho fijo para la imagen */}
       {showPreview && (
         <>
-          <div className="fixed right-0 top-0 h-full w-[700px] bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-40">
+          <div className="fixed right-0 top-0 h-full w-[550px] bg-white dark:bg-gray-800 shadow-lg border-l border-gray-200 dark:border-gray-700 z-40">
             <div className="absolute top-4 left-4 z-10">
               <button
                 onClick={() => setShowPreview(false)}
@@ -232,7 +232,7 @@ export function DocumentContratoCliente({ documentData: initialDocumentData, onB
       )}
 
       {/* Contenido principal con margen derecho cuando el preview está activo */}
-      <div className={`${showPreview ? 'mr-[700px]' : ''} transition-all duration-300`}>
+      <div className={`${showPreview ? 'mr-[450px]' : ''} transition-all duration-300`}>
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-4">

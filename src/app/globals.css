@@ -35,6 +35,11 @@
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
+@media (min-width: 768px) {
+  .login-form-mr {
+    margin-left: 100px;
+  }
+}
 
 @layer base {
   :root {

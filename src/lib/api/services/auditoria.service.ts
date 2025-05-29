@@ -179,6 +179,58 @@ export interface ExportAuditLogsRequest {
   incluir_detalles: boolean;
 }
 
+export interface ClientsDocumentsActivityResponse {
+  clientes: {
+    id_cliente: string;
+    codigo_cliente: string;
+    tipo_cliente: string;
+    nombre_razon_social: string;
+    documento_identificacion: string;
+    estado: string;
+    segmento: string;
+    segmento_bancario: string;
+    nivel_riesgo: string;
+    estado_documental: string;
+    fecha_alta: string;
+    gestor_principal: string;
+    documentos: {
+      id_documento: string;
+      codigo_documento: string;
+      titulo: string;
+      descripcion: string;
+      version_actual: number;
+      fecha_creacion: string;
+      estado: string;
+      tipo_documento: string;
+      fecha_asignacion: string;
+      actividades: {
+        id_registro: number;
+        fecha_hora: string;
+        usuario_id: string;
+        nombre_usuario: string;
+        direccion_ip: string;
+        accion: string;
+        detalles: Record<string, any>;
+        resultado: string;
+      }[];
+      total_actividades: number;
+      mostrando_actividades: number;
+    }[];
+    total_documentos: number;
+  }[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+  summary: {
+    total_clientes: number;
+    clientes_en_pagina: number;
+    limite_actividades_por_documento: number;
+  };
+}
+
 export const auditoriaService = {
   // Obtener todos los logs de auditoría
   async getAuditLogs(
@@ -238,6 +290,11 @@ export const auditoriaService = {
     if (endDate) params['end_date'] = endDate;
     const query = new URLSearchParams(params).toString();
     const { data } = await axiosInstance.get(`/audit-logs/security?${query}`);
+    return data;
+  },
+
+  async getClientsDocumentsActivity(params?: Record<string, any>): Promise<ClientsDocumentsActivityResponse> {
+    const { data } = await axiosInstance.get<ClientsDocumentsActivityResponse>('/clients-documents-activity', { params });
     return data;
   }
 }; 

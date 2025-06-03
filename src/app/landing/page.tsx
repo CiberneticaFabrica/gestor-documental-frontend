@@ -14,14 +14,16 @@ export default function LandingPage() {
     const [file, setFile] = useState<File | null>(null);
     
     const clientId = searchParams.get('client_id');
+    const sessionId = searchParams.get('session_id');
+    const documentId = searchParams.get('document_id');
     const documentType = searchParams.get('document_type');
-    const documentId = searchParams.get('id_document');
+    const action = searchParams.get('action');
 
     useEffect(() => {
-        if (!clientId || !documentType || !documentId) {
+        if (!clientId || !documentId || !documentType) {
             toast.error('Faltan parámetros requeridos en la URL');
         }
-    }, [clientId, documentType, documentId]);
+    }, [clientId, documentId, documentType]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -36,7 +38,7 @@ export default function LandingPage() {
             return;
         }
 
-        if (!clientId || !documentType || !documentId) {
+        if (!clientId || !documentId || !documentType) {
             toast.error('Faltan parámetros requeridos');
             return;
         }
@@ -46,8 +48,10 @@ export default function LandingPage() {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('client_id', clientId);
+            formData.append('document_id', documentId);
             formData.append('document_type', documentType);
-            formData.append('id_document', documentId);
+            if (sessionId) formData.append('session_id', sessionId);
+            if (action) formData.append('action', action);
 
             const response = await fetch('/api/documents/upload', {
                 method: 'POST',
@@ -68,7 +72,7 @@ export default function LandingPage() {
         }
     };
 
-    if (!clientId || !documentType || !documentId) {
+    if (!clientId || !documentId || !documentType) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <Card className="w-full max-w-md">

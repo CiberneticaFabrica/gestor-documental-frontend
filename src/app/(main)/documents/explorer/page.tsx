@@ -1,5 +1,6 @@
 "use client";
-import { DocumentExplorerPage } from '@/components/documents/explorer/DocumentExplorerPage';
+import { EnhancedDocumentExplorerPage } from '@/components/documents/explorer/EnhancedDocumentExplorerPage';
+
 export default function Page() {
-  return <DocumentExplorerPage />;
-} 
+  return <EnhancedDocumentExplorerPage />;
+}

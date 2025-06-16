@@ -7,8 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Suspense } from 'react';
 
 export default function LandingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <CardTitle>Cargando...</CardTitle>
+                        <CardDescription>
+                            Por favor espere mientras cargamos la página
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        }>
+            <LandingPageContent />
+        </Suspense>
+    );
+}
+
+function LandingPageContent() {
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);

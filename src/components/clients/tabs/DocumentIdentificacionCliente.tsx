@@ -181,7 +181,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
     }
   };
 
-  const isExpired = new Date(documento_especializado.documento_identificacion.fecha_expiracion) < new Date();
+  const isExpired = new Date(documento_especializado.documento_identificacion.fecha_expiracion + 'T00:00:00') < new Date();
 
   const handlePreviewClick = async () => {
     if (showPreview) {
@@ -578,7 +578,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                               />
                             ) : (
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {new Date(documento_especializado.documento_identificacion.fecha_emision).toLocaleDateString('es-ES')}
+                                {new Date(documento_especializado.documento_identificacion.fecha_emision + 'T00:00:00').toLocaleDateString('es-ES')}
                               </p>
                             )}
                           </div>
@@ -596,7 +596,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                             ) : (
                               <div className="flex items-center gap-2">
                                 <p className={`font-medium ${isExpired ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                                  {new Date(documento_especializado.documento_identificacion.fecha_expiracion).toLocaleDateString('es-ES')}
+                                  {new Date(documento_especializado.documento_identificacion.fecha_expiracion + 'T00:00:00').toLocaleDateString('es-ES')}
                                 </p>
                                 {isExpired && (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">

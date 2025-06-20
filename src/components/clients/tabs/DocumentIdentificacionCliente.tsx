@@ -32,6 +32,54 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
 
   const { documento, tipo_documento, version_actual, cliente, documento_especializado, analisis_ia, historial_procesamiento, validacion } = documentData;
 
+  // Función para formatear fechas de manera segura
+  const formatDateSafe = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const parts = dateString.split('-');
+      if (parts.length !== 3) return dateString;
+      
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]); 
+      const day = parseInt(parts[2]);
+      
+      if (isNaN(year) || isNaN(month) || isNaN(day)) return dateString;
+      
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
+  // Función para obtener el texto del género
+  const getGenderText = (genero: string) => {
+    if (!genero) return 'No especificado';
+    switch (genero.toUpperCase()) {
+      case 'F': return 'Femenino';
+      case 'M': return 'Masculino';
+      case 'NC': return 'No especificado';
+      default: return genero;
+    }
+  };
+
+  // Función para verificar si el documento está vencido
+  const checkIfExpired = () => {
+    const expDate = documento_especializado?.documento_identificacion?.fecha_expiracion;
+    if (!expDate) return false;
+    
+    try {
+      const [year, month, day] = expDate.split('-').map(Number);
+      const expirationDate = new Date(year, month - 1, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return expirationDate < today;
+    } catch (error) {
+      console.error('Error checking expiration:', error);
+      return false;
+    }
+  };
+
   // Inicializar los datos editables cuando cambia documentData
   useEffect(() => {
     if (documentData?.documento_especializado?.documento_identificacion) {
@@ -181,8 +229,6 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
     }
   };
 
-  const isExpired = new Date(documento_especializado.documento_identificacion.fecha_expiracion) < new Date();
-
   const handlePreviewClick = async () => {
     if (showPreview) {
       setShowPreview(false);
@@ -294,6 +340,8 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
     }
     onBack();
   };
+
+  const isExpired = checkIfExpired();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -550,10 +598,11 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                               >
                                 <option value="M">Masculino</option>
                                 <option value="F">Femenino</option>
+                                <option value="NC">No especificado</option>
                               </select>
                             ) : (
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {documento_especializado.documento_identificacion.genero === 'F' ? 'Femenino' : 'Masculino'}
+                                {getGenderText(documento_especializado.documento_identificacion.genero)}
                               </p>
                             )}
                           </div>
@@ -578,7 +627,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                               />
                             ) : (
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {new Date(documento_especializado.documento_identificacion.fecha_emision).toLocaleDateString('es-ES')}
+                                {formatDateSafe(documento_especializado.documento_identificacion.fecha_emision)}
                               </p>
                             )}
                           </div>
@@ -596,7 +645,7 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                             ) : (
                               <div className="flex items-center gap-2">
                                 <p className={`font-medium ${isExpired ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                                  {new Date(documento_especializado.documento_identificacion.fecha_expiracion).toLocaleDateString('es-ES')}
+                                  {formatDateSafe(documento_especializado.documento_identificacion.fecha_expiracion)}
                                 </p>
                                 {isExpired && (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
@@ -745,16 +794,6 @@ export function DocumentIdentificacionCliente({ documentData: initialDocumentDat
                     <Eye className="h-4 w-4" />
                     {showPreview ? 'Ocultar Imagen' : 'Ver Imagen Original'}
                   </button>
-                  {/*<button 
-                    onClick={handleDownload}
-                    className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Descargar Documento
-                  </button>
-                  {/*<button className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                    Generar Reporte
-                  </button>*/}
                 </div>
               </div>
 

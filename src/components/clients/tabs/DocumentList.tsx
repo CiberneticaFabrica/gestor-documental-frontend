@@ -1,4 +1,4 @@
-import { FileText, Loader2, Upload, AlertCircle, CheckCircle2, Clock, Folder, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { FileText, Loader2, Upload, AlertCircle, CheckCircle2, Clock, Folder, ChevronDown, ChevronRight, RefreshCw, Send, X, BarChart3, Bell, Calendar, Users } from 'lucide-react';
 import { type DocumentRequestsResponse, type ClientFoldersResponse } from '@/lib/api/services/client.service';
 import { type ClientDocument } from './UserDocumentsTab';
 import { useState, useEffect } from 'react';
@@ -7,6 +7,8 @@ import type { DocumentVersion, DocumentVersionPreview } from '@/lib/api/services
 import React from 'react';
 import { DocumentIdentificacionCliente } from './DocumentIdentificacionCliente';
 import { DocumentContratoCliente } from './DocumentContratoCliente';
+import { expireDocumentService, type ExpiryMonitorResponse } from '@/lib/api/services/expiredocument.service';
+import { toast } from 'sonner';
 
 interface DocumentListProps {
   data: DocumentRequestsResponse;
@@ -33,6 +35,11 @@ interface VersionDetailModalProps {
   onClose: () => void;
   onPreviewClick: (url: string, title: string) => void;
   documentId: string;
+}
+
+interface ExpiryMonitorResultModalProps {
+  response: ExpiryMonitorResponse;
+  onClose: () => void;
 }
 
 export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions, onClose, onPreviewClick, documentId }) => {
@@ -62,6 +69,7 @@ export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions
         <button
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 z-10"
           onClick={onClose}
+          title="Cerrar modal"
         >✕</button>
         
         {/* Tabs de versiones */}
@@ -124,6 +132,201 @@ export const VersionDetailModal: React.FC<VersionDetailModalProps> = ({ versions
   );
 };
 
+export const ExpiryMonitorResultModal: React.FC<ExpiryMonitorResultModalProps> = ({ response, onClose }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Fondo oscuro */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <BarChart3 className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Resultado del Monitoreo</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {response.execution_type === 'manual' ? 'Ejecución Manual' : 'Ejecución Automática'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title="Cerrar modal"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Contenido */}
+        <div className="p-6 space-y-6">
+          {/* Mensaje de éxito */}
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <span className="font-medium text-green-800 dark:text-green-200">{response.message}</span>
+            </div>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              Timestamp: {new Date(response.timestamp).toLocaleString('es-ES')}
+            </p>
+          </div>
+
+          {/* Métricas principales */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {response.metrics.documents_processed}
+              </div>
+              <div className="text-sm text-blue-700 dark:text-blue-300">Documentos Procesados</div>
+            </div>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Bell className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {response.metrics.notifications_sent}
+              </div>
+              <div className="text-sm text-yellow-700 dark:text-yellow-300">Notificaciones Enviadas</div>
+            </div>
+            
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Send className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {response.metrics.renewal_requests_created}
+              </div>
+              <div className="text-sm text-purple-700 dark:text-purple-300">Solicitudes Creadas</div>
+            </div>
+            
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {response.metrics.clients_updated}
+              </div>
+              <div className="text-sm text-green-700 dark:text-green-300">Clientes Actualizados</div>
+            </div>
+          </div>
+
+          {/* Detalle por umbrales */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-500" />
+              Detalle por Umbrales de Días
+            </h3>
+            <div className="space-y-3">
+              {response.metrics.thresholds_processed.map((threshold, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        threshold.days_threshold <= 5 ? 'bg-red-500' :
+                        threshold.days_threshold <= 15 ? 'bg-yellow-500' : 'bg-blue-500'
+                      }`} />
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {threshold.days_threshold} días antes del vencimiento
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {(() => {
+                        const today = new Date();
+                        const targetDate = new Date(today);
+                        targetDate.setDate(today.getDate() + threshold.days_threshold);
+                        return targetDate.toLocaleDateString('es-ES');
+                      })()}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="text-center">
+                      <div className="font-semibold text-gray-900 dark:text-white">
+                        {threshold.documents_found}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Documentos</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-yellow-600 dark:text-yellow-400">
+                        {threshold.results.notifications_sent}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Notificaciones</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-purple-600 dark:text-purple-400">
+                        {threshold.results.renewal_requests_created}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Solicitudes</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-green-600 dark:text-green-400">
+                        {threshold.results.clients_updated}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">Clientes</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Parámetros utilizados */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Parámetros de Ejecución</h3>
+            <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Días de notificación:</span>
+                  <div className="flex gap-2 mt-1">
+                    {response.parameters.notification_days.map((day, index) => (
+                      <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                        {day} días
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Ejecución forzada:</span>
+                  <div className="mt-1">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      response.parameters.force_execution 
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                    }`}>
+                      {response.parameters.force_execution ? 'Sí' : 'No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function DocumentList({
   data,
   documentsData,
@@ -153,6 +356,31 @@ export function DocumentList({
   const [showContratoView, setShowContratoView] = useState(false);
   const [identificacionData, setIdentificacionData] = useState<DocumentDetailsResponse | null>(null);
   const [contratoData, setContratoData] = useState<DocumentDetailsResponse | null>(null);
+  const [requestingDocuments, setRequestingDocuments] = useState(false);
+  const [expiryMonitorResponse, setExpiryMonitorResponse] = useState<ExpiryMonitorResponse | null>(null);
+
+  const handleRequestDocuments = async () => {
+    setRequestingDocuments(true);
+    try {
+      const result = await expireDocumentService.executeExpiryMonitor({
+        notification_days: [30, 15, 5],
+        force_execution: false
+      });
+      
+      toast.success('Solicitud de documentos enviada exitosamente', {
+        description: `Procesados: ${result.metrics.documents_processed} documentos, Notificaciones: ${result.metrics.notifications_sent}`,
+      });
+      
+      setExpiryMonitorResponse(result);
+    } catch (error) {
+      console.error('Error requesting documents:', error);
+      toast.error('Error al solicitar documentos', {
+        description: 'Por favor, intente nuevamente o contacte soporte.',
+      });
+    } finally {
+      setRequestingDocuments(false);
+    }
+  };
 
   const handleDocumentClick = async (doc: ClientDocument) => {
     // Check document type and handle accordingly
@@ -351,7 +579,26 @@ export function DocumentList({
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 <Upload className="h-4 w-4" />
-                Subir nuevo documento
+                Subir documento
+              </button>
+            </div>
+            <div className="ml-2">
+              <button
+                onClick={handleRequestDocuments}
+                disabled={requestingDocuments}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {requestingDocuments ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Solicitando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Solicitar documentos
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -558,6 +805,13 @@ export function DocumentList({
               onClose={() => setShowVersionModal(false)}
               onPreviewClick={onPreviewClick}
               documentId={selectedDocumentId}
+            />
+          )}
+
+          {expiryMonitorResponse && (
+            <ExpiryMonitorResultModal
+              response={expiryMonitorResponse}
+              onClose={() => setExpiryMonitorResponse(null)}
             />
           )}
         </>

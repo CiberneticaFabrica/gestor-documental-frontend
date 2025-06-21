@@ -51,7 +51,7 @@ function LandingPageContent() {
     // Cargar información del cliente y verificar sesión
     useEffect(() => {
         const loadData = async () => {
-            if (!clientId || !documentId || !documentType) {
+        if (!clientId || !documentId || !documentType) {
                 setError('Faltan parámetros requeridos en la URL');
                 return;
             }
@@ -267,23 +267,23 @@ function LandingPageContent() {
                             </div>
                             <div>
                                 <CardTitle>Actualización de Documento</CardTitle>
-                                <CardDescription>
+                    <CardDescription>
                                     {documentType} • {action === 'renewal' ? 'Renovación' : 'Actualización'}
-                                </CardDescription>
+                    </CardDescription>
                             </div>
                         </div>
-                    </CardHeader>
+                </CardHeader>
                     <CardContent className="p-6">
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-2">
+                        <div className="space-y-2">
                                 <Label htmlFor="document" className="text-base font-medium">
                                     Seleccione su documento
                                 </Label>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                                    <Input
-                                        id="document"
-                                        type="file"
-                                        onChange={handleFileChange}
+                            <Input
+                                id="document"
+                                type="file"
+                                onChange={handleFileChange}
                                         accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.webp"
                                         className="cursor-pointer border-0 bg-transparent"
                                     />
@@ -299,10 +299,10 @@ function LandingPageContent() {
                                         </span>
                                     </div>
                                 )}
-                            </div>
+                        </div>
                             
-                            <Button 
-                                type="submit" 
+                        <Button 
+                            type="submit" 
                                 className="w-full py-3 text-base font-medium"
                                 disabled={uploading || !file}
                             >
@@ -314,10 +314,10 @@ function LandingPageContent() {
                                 ) : (
                                     'Subir Documento'
                                 )}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
 
                 {/* Información adicional */}
                 <Card className="mt-6 border-0 shadow-sm bg-blue-50">

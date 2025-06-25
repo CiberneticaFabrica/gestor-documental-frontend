@@ -219,17 +219,17 @@ export function UserDocumentsTab() {
         
         if (!existingDoc) {
           // Documento completamente nuevo - SOLO considerar si ya está procesado
-          return newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision';
+          return newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision' || newDoc.estado === 'en_revision';
         }
         
         // Documento existente - verificar cambio de estado a procesado
         return (
           existingDoc.estado !== newDoc.estado && 
-          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision')
+          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision' || newDoc.estado === 'en_revision')
         ) || (
           // También verificar cambios en versión para documentos ya procesados
           existingDoc.version_actual !== newDoc.version_actual &&
-          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision')
+          (newDoc.estado === 'publicado' || newDoc.estado === 'pendiente_revision' || newDoc.estado === 'en_revision')
         );
       });
   

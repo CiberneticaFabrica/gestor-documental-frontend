@@ -18,6 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
+  Workflow,
+  ClipboardList,
+  Activity,
+  Cog,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
@@ -54,6 +58,13 @@ const documentsSubmenu: MenuItem[] = [
    
 ];
 
+const workflowsSubmenu: MenuItem[] = [
+  { name: 'Flujos de Trabajo', href: '/workflows', icon: Workflow },
+  { name: 'Mis Tareas', href: '/tasks', icon: ClipboardList },
+  { name: 'Monitor de Flujos', href: '/workflows/monitor', icon: Activity },
+  { name: 'Configuración Flujos', href: '/workflows/settings', icon: Cog },
+];
+
 const adminMenu: MenuItem[] = [
   { name: 'Usuarios', href: '/admin/users', icon: Users },
   { name: 'Carpetas', href: '/admin/folders', icon: FolderArchive },
@@ -79,6 +90,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const { theme } = useTheme();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [workflowsOpen, setWorkflowsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
@@ -205,6 +217,55 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     {/* Línea vertical */}
                     <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100 text-sm" />
                     {documentsSubmenu.map((sub) => (
+                      <SidebarLink
+                        key={sub.name}
+                        icon={sub.icon}
+                        href={sub.href}
+                        label={sub.name}
+                        active={pathname === sub.href}
+                        small
+                        showDot={pathname === sub.href}
+                        minimized={minimized}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* PROCESOS Y FLUJOS */}
+            <div>
+              <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
+                {minimized ? <span className="text-lg">…</span> : "PROCESOS Y FLUJOS"}
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className={cn(
+                    'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
+                    pathname.startsWith('/workflows') || pathname.startsWith('/tasks') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50',
+                    minimized ? 'justify-center' : ''
+                  )}
+                  onClick={() => {
+                    setMinimized(false);
+                    setWorkflowsOpen((open) => !open);
+                  }}
+                  aria-expanded="false"
+                  title={minimized ? "Procesos y Flujos" : undefined}
+                >
+                  <Workflow className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', (pathname.startsWith('/workflows') || pathname.startsWith('/tasks')) ? 'text-primary-foreground' : ' text-gray-400')} />
+                  {!minimized && <span>Procesos y Flujos</span>}
+                  {!minimized && (
+                    <svg className={cn('ml-auto h-4 w-4 transition-transform', workflowsOpen ? 'rotate-90' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+                {workflowsOpen && !minimized && (
+                  <div className="ml-8 mt-1 space-y-1 relative">
+                    {/* Línea vertical */}
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100 text-sm" />
+                    {workflowsSubmenu.map((sub) => (
                       <SidebarLink
                         key={sub.name}
                         icon={sub.icon}

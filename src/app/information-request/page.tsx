@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ const requiredDocuments = [
   { id: 'otros', name: 'Otros documentos', required: false }
 ];
 
-export default function InformationRequestPage() {
+function InformationRequestPageContent() {
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -724,5 +724,13 @@ export default function InformationRequestPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function InformationRequestPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <InformationRequestPageContent />
+    </Suspense>
   );
 } 

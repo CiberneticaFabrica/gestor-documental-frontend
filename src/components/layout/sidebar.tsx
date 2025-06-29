@@ -18,8 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Workflow,
-  ClipboardList,
   Activity,
   Cog,
 } from 'lucide-react';
@@ -41,16 +39,7 @@ const mainMenu: MenuItem[] = [
   { name: 'Carpetas', href: '/folders', icon: FolderArchive },
   { name: 'Reportes', href: '/reports', icon: BarChart3 },
   { name: 'Due Diligence', href: '#', icon: Shield, soon: true },
-  { name: 'Conoce a tu Cliente (KYC)', href: '#', icon: Users, soon: true },
 ];
-
-//const documentsSubmenu: MenuItem[] = [
-//  { name: 'Explorador', href: '/documents/explorer', icon: FileText },
-//  { name: 'Historial', href: '/documents/history', icon: Clock },
-//  { name: 'Rechazados', href: '/documents/rejected', icon: AlertCircle },
-//  { name: 'Subir', href: '/documents/upload', icon: Upload },
-//  { name: 'Verificación', href: '/documents/verification', icon: CheckCircle },
-//];
 
 const documentsSubmenu: MenuItem[] = [
   { name: 'Explorador', href: '/documents/explorer', icon: FileText },
@@ -58,11 +47,12 @@ const documentsSubmenu: MenuItem[] = [
    
 ];
 
-const workflowsSubmenu: MenuItem[] = [
-  { name: 'Flujos de Trabajo', href: '/workflows', icon: Workflow },
-  { name: 'Mis Tareas', href: '/tasks', icon: ClipboardList },
-  { name: 'Monitor de Flujos', href: '/workflows/monitor', icon: Activity },
-  { name: 'Configuración Flujos', href: '/workflows/settings', icon: Cog },
+const kycSubmenu: MenuItem[] = [
+  { name: 'Dashboard KYC', href: '/kyc/dashboard', icon: LayoutDashboard },
+  { name: 'Clientes', href: '/kyc/clients', icon: Users },
+  { name: 'Documentos Pendientes', href: '/kyc/pending-documents', icon: FileText },
+  { name: 'Notificaciones', href: '/kyc/notifications', icon: AlertCircle },
+  { name: 'Reportes KYC', href: '/kyc/reports', icon: BarChart3 },
 ];
 
 const adminMenu: MenuItem[] = [
@@ -90,7 +80,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const { theme } = useTheme();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [documentsOpen, setDocumentsOpen] = useState(false);
-  const [workflowsOpen, setWorkflowsOpen] = useState(false);
+  const [kycOpen, setKycOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
@@ -176,7 +166,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     icon={item.icon}
                     href={item.href}
                     label={item.name}
-                    active={pathname === item.href}
+                    active={item.name === 'Clientes' ? pathname.startsWith('/clients') : pathname === item.href}
                     minimized={minimized}
                     soon={item.soon}
                   />
@@ -233,39 +223,39 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
               </div>
             </div>
 
-            {/* PROCESOS Y FLUJOS */}
+            {/* KYC */}
             <div>
               <div className="px-2 text-xs font-semibold text-gray-400 mb-2 tracking-widest">
-                {minimized ? <span className="text-lg">…</span> : "PROCESOS Y FLUJOS"}
+                {minimized ? <span className="text-lg">…</span> : "KYC"}
               </div>
               <div>
                 <button
                   type="button"
                   className={cn(
                     'group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md',
-                    pathname.startsWith('/workflows') || pathname.startsWith('/tasks') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50',
+                    pathname.startsWith('/kyc') ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-secondary/50',
                     minimized ? 'justify-center' : ''
                   )}
                   onClick={() => {
                     setMinimized(false);
-                    setWorkflowsOpen((open) => !open);
+                    setKycOpen((open) => !open);
                   }}
                   aria-expanded="false"
-                  title={minimized ? "Procesos y Flujos" : undefined}
+                  title={minimized ? "KYC" : undefined}
                 >
-                  <Workflow className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', (pathname.startsWith('/workflows') || pathname.startsWith('/tasks')) ? 'text-primary-foreground' : ' text-gray-400')} />
-                  {!minimized && <span>Procesos y Flujos</span>}
+                  <Shield className={cn('h-6 w-6 flex-shrink-0', minimized ? '' : 'mr-3', pathname.startsWith('/kyc') ? 'text-primary-foreground' : ' text-gray-400')} />
+                  {!minimized && <span>KYC & Compliance</span>}
                   {!minimized && (
-                    <svg className={cn('ml-auto h-4 w-4 transition-transform', workflowsOpen ? 'rotate-90' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={cn('ml-auto h-4 w-4 transition-transform', kycOpen ? 'rotate-90' : '')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   )}
                 </button>
-                {workflowsOpen && !minimized && (
+                {kycOpen && !minimized && (
                   <div className="ml-8 mt-1 space-y-1 relative">
                     {/* Línea vertical */}
                     <div className="absolute left-0 top-0 bottom-0 w-px bg-blue-100 text-sm" />
-                    {workflowsSubmenu.map((sub) => (
+                    {kycSubmenu.map((sub) => (
                       <SidebarLink
                         key={sub.name}
                         icon={sub.icon}

@@ -5,13 +5,17 @@ import { Breadcrumbs } from './sidebar'; // Importación corregida
 import { Sidebar } from './sidebar';
 import { Menu, Bell, LogOut, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { NotificationsPanel } from '@/components/ui/notifications-panel';
+import { useNotifications } from '@/hooks/use-notifications';
 import React from 'react';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
+  const { unreadCount } = useNotifications();
 
   // Cierra el sidebar cuando se redimensiona la pantalla a un tamaño más grande
   useEffect(() => {
@@ -69,9 +73,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 title="Notificaciones"
-                className="rounded-full bg-secondary p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="relative rounded-full bg-secondary p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
               >
                 <Bell className="h-6 w-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
               <div className="relative ml-3">
                 <button
@@ -94,6 +104,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Panel de notificaciones */}
+      <NotificationsPanel 
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
     </div>
   );
 }

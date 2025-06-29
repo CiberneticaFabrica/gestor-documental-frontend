@@ -20,6 +20,7 @@ import { useParams } from 'next/navigation';
 import { clientService } from '@/lib/api/services/client.service';
 import { PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
+import { expireDocumentService } from '@/lib/api/services/expiredocument.service';
 
 // Si ClientActivity no está disponible, defínelo aquí para evitar el error de linter
 type ClientActivity = {
@@ -252,6 +253,24 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
     }
   };
 
+  const handleRequestDocument = async () => {
+    if (!cliente.id_cliente) return;
+    
+    try {
+      const response = await expireDocumentService.sendInformationRequest(cliente.id_cliente);
+      // Mostrar mensaje de éxito
+      toast.success('Solicitud de documento enviada exitosamente', {
+        description: `Se envió la solicitud a ${response.client_name} (${response.client_email})`
+      });
+    } catch (error) {
+      console.error('Error al enviar solicitud:', error);
+      // Mostrar mensaje de error
+      toast.error('Error al enviar la solicitud', {
+        description: 'No se pudo enviar la solicitud de documento. Intente nuevamente.'
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header con información principal */}
@@ -278,7 +297,7 @@ export function UserGeneralInfoTab({ clientData, documentRequests }: UserGeneral
               <UserCog className="w-4 h-4 mr-2" />
               Editar Cliente
             </Button>
-            <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+            <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" onClick={handleRequestDocument}>
               <FileText className="w-4 h-4 mr-2" />
               Solicitar Documento
             </Button>

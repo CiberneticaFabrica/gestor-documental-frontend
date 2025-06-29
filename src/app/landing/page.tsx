@@ -11,6 +11,7 @@ import { Suspense } from 'react';
 import { documentService } from '@/lib/api/services/document.service';
 import { clientService } from '@/lib/api/services/client.service';
 import { User, Clock, FileText, CheckCircle, AlertTriangle, Calendar, Shield, Building, Upload } from 'lucide-react';
+import { authService } from '@/lib/api/services/auth.service';
 
 export default function LandingPage() {
     return (
@@ -48,16 +49,31 @@ function LandingPageContent() {
     const documentType = searchParams.get('document_type');
     const action = searchParams.get('action');
 
+    // Login automático
+    async function performAutoLogin() {
+        try {
+            const credentials = { username: "admin", password: "marck321" };
+            const response = await authService.login(credentials);
+            localStorage.setItem('session_token', response.session_token);
+            if (response.expires_at) {
+                localStorage.setItem('expires_at', response.expires_at);
+            }
+        } catch (error) {
+            toast.error('Error de autenticación automática');
+            throw error;
+        }
+    }
+
     // Cargar información del cliente y verificar sesión
     useEffect(() => {
         const loadData = async () => {
-        if (!clientId || !documentId || !documentType) {
+            if (!clientId || !documentId || !documentType) {
                 setError('Faltan parámetros requeridos en la URL');
                 return;
             }
-
             setLoading(true);
             try {
+                await performAutoLogin();
                 // Cargar información del cliente
                 const clientDetail = await clientService.getClientDetail(clientId);
                 setClientData(clientDetail.cliente);
@@ -102,6 +118,7 @@ function LandingPageContent() {
 
         setUploading(true);
         try {
+            await performAutoLogin();
             // Usar el servicio de documentos para subir una nueva versión
             const result = await documentService.uploadDocumentVersion({
                 id_cliente: clientId,

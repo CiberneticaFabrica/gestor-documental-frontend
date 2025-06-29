@@ -41,6 +41,15 @@ export interface ExpiryMonitorRequest {
   force_execution?: boolean;
 }
 
+export interface SendInformationRequestResponse {
+  message: string;
+  client_id: string;
+  client_name: string;
+  client_email: string;
+  timestamp: string;
+  request_details: any;
+}
+
 // Configuración específica para este servicio
 const EXPIRY_MONITOR_CONFIG = {
   baseURL: 'https://a43hkqj27a.execute-api.us-east-1.amazonaws.com/Prod',
@@ -106,5 +115,16 @@ export const expireDocumentService = {
       notification_days: notificationDays,
       force_execution: forceExecution
     });
+  },
+
+  /**
+   * Envía solicitud de información al cliente
+   */
+  sendInformationRequest: async (clientId: string): Promise<SendInformationRequestResponse> => {
+    const { data } = await expiryMonitorAxios.post<SendInformationRequestResponse>(
+      `/client/send-information-request`,
+      { client_id: clientId }
+    );
+    return data;
   }
 };

@@ -386,7 +386,7 @@ export function DocumentList({
     // Check document type and handle accordingly
     const docType = doc.tipo_documento?.toLowerCase();
     const docTypeId = doc.id_tipo_documento?.toLowerCase();
-   
+    
     if (docType === 'dni' || docType === 'pasaporte' || docTypeId === 'dni' || docTypeId === 'pasaporte') {
       try {
         const response = await documentService.getDocumentDetails(doc.id_documento);

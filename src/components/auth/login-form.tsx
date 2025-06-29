@@ -532,15 +532,41 @@ export default function LoginForm() {
           <div className="hidden md:flex md:w-1/2 xl:w-2/5 relative">
             <div className="corporate-panel flex flex-col justify-center p-10 text-white relative z-20 w-full">
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-6">
-                  <Image 
-                    src="/images/cybelexlogoblanco.png" 
-                    alt="CyberLex" 
-                    width={350} 
-                    height={420} 
-                    className="h-25 mr-2"
-                  />
-                </div>              
+                <div className="flex flex-col items-start mb-6">
+                  <div className="flex items-center gap-4">
+                    {/* Logo SVG compuesto */}
+                    <svg width="110" height="110" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Elipse grande */}
+                      <ellipse cx="110" cy="110" rx="90" ry="90" stroke="#fff" strokeWidth="4" fill="none"/>
+                      {/* Círculo superior */}
+                      <circle cx="110" cy="30" r="24" fill="#fff"/>
+                      {/* Círculo izquierdo */}
+                      <circle cx="40" cy="150" r="24" fill="#fff"/>
+                      {/* Círculo derecho */}
+                      <circle cx="180" cy="150" r="24" fill="#fff"/>
+                    </svg>
+                    <div className="flex flex-col">
+                      <span style={{
+                        fontSize: '2.5rem',
+                        fontWeight: 700,
+                        color: '#fff',
+                        letterSpacing: '0.05em',
+                        lineHeight: 1
+                      }}>
+                        DocFlow AI
+                      </span>
+                      <span style={{
+                        fontSize: '1rem',
+                        color: 'rgba(255,255,255,0.7)',
+                        fontWeight: 400,
+                        marginTop: 2,
+                        marginLeft: 4
+                      }}>
+                        by Cibernética
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 <p className="mb-8 text-slate-200 text-base leading-relaxed max-w-md">
                   Plataforma integral para la administración segura de documentos financieros. 
                   Controle el acceso de su equipo, gestione vencimientos, genere reportes de auditoría 

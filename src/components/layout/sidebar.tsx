@@ -52,7 +52,7 @@ const kycSubmenu: MenuItem[] = [
   { name: 'Clientes', href: '/kyc/clients', icon: Users },
   { name: 'Documentos Pendientes', href: '/kyc/pending-documents', icon: FileText },
   { name: 'Notificaciones', href: '/kyc/notifications', icon: AlertCircle },
-  { name: 'Reportes KYC', href: '/kyc/reports', icon: BarChart3 },
+ 
 ];
 
 const adminMenu: MenuItem[] = [

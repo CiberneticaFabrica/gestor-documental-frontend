@@ -52,7 +52,7 @@ const kycSubmenu: MenuItem[] = [
   { name: 'Clientes', href: '/kyc/clients', icon: Users },
   { name: 'Documentos Pendientes', href: '/kyc/pending-documents', icon: FileText },
   { name: 'Notificaciones', href: '/kyc/notifications', icon: AlertCircle },
-  { name: 'Reportes KYC', href: '/kyc/reports', icon: BarChart3 },
+ 
 ];
 
 const adminMenu: MenuItem[] = [
@@ -82,6 +82,14 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [kycOpen, setKycOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+
+  // Variables CSS para colores según el tema
+  const textColorSecondary = theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+
+  useEffect(() => {
+    // Aplicar variables CSS dinámicamente
+    document.documentElement.style.setProperty('--text-color-secondary', textColorSecondary);
+  }, [theme, textColorSecondary]);
 
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
   useEffect(() => {
@@ -121,21 +129,53 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
           <div className="flex items-center h-16 px-4 border-b">
             <div className={minimized ? "flex-1 flex justify-center" : "flex items-center"}>
               {!minimized ? (
-                <Image 
-                  src={theme === 'dark' ? "/images/cybelexlogoblanco.png" : "/images/cyberlexlogo.png"} 
-                  alt="Cyberlex" 
-                  width={300} 
-                  height={400} 
-                  className="h-14 mr-2"
-                />
+                <div className="flex items-center gap-3">
+                  {/* Logo SVG compuesto */}
+                  <svg width="40" height="40" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Elipse grande */}
+                    <ellipse cx="110" cy="110" rx="90" ry="90" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    {/* Círculo superior */}
+                    <circle cx="110" cy="30" r="24" fill="currentColor"/>
+                    {/* Círculo izquierdo */}
+                    <circle cx="40" cy="150" r="24" fill="currentColor"/>
+                    {/* Círculo derecho */}
+                    <circle cx="180" cy="150" r="24" fill="currentColor"/>
+                  </svg>
+                  <div className="flex flex-col">
+                    <span style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 700,
+                      color: 'currentColor',
+                      letterSpacing: '0.05em',
+                      lineHeight: 1
+                    }}>
+                      DocFlow AI
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--text-color-secondary)',
+                      fontWeight: 400,
+                      marginTop: 1,
+                      marginLeft: 2
+                    }}>
+                      by Cibernética
+                    </span>
+                  </div>
+                </div>
               ) : (
-                <Image 
-                  src={theme === 'dark' ? "/images/cyberlexlogosintexto.png" : "/images/cyberlexlogosintexto.png"} 
-                  alt="Cyberlex" 
-                  width={300} 
-                  height={400} 
-                  className="h-14 mr-2"
-                />
+                <div className="flex justify-center">
+                  {/* Logo SVG compuesto (versión minimizada) */}
+                  <svg width="32" height="32" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Elipse grande */}
+                    <ellipse cx="110" cy="110" rx="90" ry="90" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    {/* Círculo superior */}
+                    <circle cx="110" cy="30" r="24" fill="currentColor"/>
+                    {/* Círculo izquierdo */}
+                    <circle cx="40" cy="150" r="24" fill="currentColor"/>
+                    {/* Círculo derecho */}
+                    <circle cx="180" cy="150" r="24" fill="currentColor"/>
+                  </svg>
+                </div>
               )}
             </div>
           </div>

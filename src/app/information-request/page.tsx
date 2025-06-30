@@ -733,4 +733,4 @@ export default function InformationRequestPage() {
       <InformationRequestPageContent />
     </Suspense>
   );
-} 
+

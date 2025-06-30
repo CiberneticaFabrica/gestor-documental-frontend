@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CircleUser, Mail, Lock, Eye, EyeOff, Shield, FileText, Database } from "lucide-react";
@@ -23,6 +23,123 @@ export default function LoginForm() {
   });
   const router = useRouter();
   const { login } = useAuth();
+
+  // Inicializar partículas interactivas
+  useEffect(() => {
+    const initParticles = () => {
+      const canvas = document.getElementById('particles-js') as HTMLCanvasElement;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Configurar canvas
+      const resizeCanvas = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // Configuración de partículas
+      const particles: Array<{
+        x: number;
+        y: number;
+        vx: number;
+        vy: number;
+        size: number;
+        opacity: number;
+      }> = [];
+
+      const mouse = { x: 0, y: 0, radius: 150 };
+
+      // Crear partículas
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 3 + 1,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+
+      // Evento del mouse
+      const handleMouseMove = (e: MouseEvent) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      };
+
+      canvas.addEventListener('mousemove', handleMouseMove);
+
+      // Función de animación
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Actualizar y dibujar partículas
+        particles.forEach((particle, index) => {
+          // Mover partícula
+          particle.x += particle.vx;
+          particle.y += particle.vy;
+
+          // Rebotar en los bordes
+          if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+
+          // Interacción con el mouse
+          const dx = mouse.x - particle.x;
+          const dy = mouse.y - particle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < mouse.radius) {
+            const force = (mouse.radius - distance) / mouse.radius;
+            const angle = Math.atan2(dy, dx);
+            particle.vx -= Math.cos(angle) * force * 0.02;
+            particle.vy -= Math.sin(angle) * force * 0.02;
+          }
+
+          // Dibujar partícula
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(59, 130, 246, ${particle.opacity})`;
+          ctx.fill();
+
+          // Conectar partículas cercanas
+          particles.forEach((otherParticle, otherIndex) => {
+            if (index === otherIndex) return;
+            
+            const dx = particle.x - otherParticle.x;
+            const dy = particle.y - otherParticle.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 100) {
+              ctx.beginPath();
+              ctx.moveTo(particle.x, particle.y);
+              ctx.lineTo(otherParticle.x, otherParticle.y);
+              ctx.strokeStyle = `rgba(59, 130, 246, ${0.1 * (1 - distance / 100)})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          });
+        });
+
+        requestAnimationFrame(animate);
+      };
+
+      animate();
+
+      // Cleanup
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+        canvas.removeEventListener('mousemove', handleMouseMove);
+      };
+    };
+
+    // Inicializar después de que el DOM esté listo
+    const timer = setTimeout(initParticles, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleRememberMeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const isChecked = e.target.checked;
@@ -47,67 +164,6 @@ export default function LoginForm() {
     <>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        /* Animated Documents Background */
-        .document-animation {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          pointer-events: none;
-        }
-        
-        .floating-document {
-          position: absolute;
-          width: 40px;
-          height: 50px;
-          background: linear-gradient(135deg, rgba(18, 0, 185, 0.19) 0%, rgba(4, 7, 184, 0.47) 100%);
-          border: 1px solid rgb(3, 0, 194);
-          border-radius: 4px;
-          animation: float-document linear infinite;
-          opacity: 0;
-        }
-        
-        .floating-document::before {
-          content: '';
-          position: absolute;
-          top: 8px;
-          left: 8px;
-          right: 8px;
-          height: 2px;
-          background: rgb(4, 0, 255);
-          border-radius: 1px;
-        }
-        
-        .floating-document::after {
-          content: '';
-          position: absolute;
-          top: 16px;
-          left: 8px;
-          right: 12px;
-          height: 1px;
-          background: rgb(15, 25, 163);
-          border-radius: 1px;
-        }
-        
-        @keyframes float-document {
-          0% {
-            transform: translateY(100vh) translateX(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-150px) translateX(30px) rotate(15deg);
-            opacity: 0;
-          }
-        }
         
         /* Security Grid Pattern */
         .security-grid {
@@ -459,10 +515,6 @@ export default function LoginForm() {
             background: rgba(255, 255, 255, 0.98);
           }
           
-          .floating-document {
-            display: none;
-          }
-          
           .security-grid {
             opacity: 0.3;
           }
@@ -503,34 +555,24 @@ export default function LoginForm() {
         }
       `}</style>
       
-      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50">
-        {/* Animated Documents Background */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="document-animation">
-            {Array.from({ length: 15 }).map((_, i) => (
-              <div 
-                key={i} 
-                className="floating-document" 
-                style={{ 
-                  left: `${5 + i * 6}%`, 
-                  animationDelay: `${Math.random() * 20}s`,
-                  animationDuration: `${15 + Math.random() * 10}s`
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
+      <div className="relative min-h-screen overflow-hidden bg-imageLogin">
         {/* Security Grid Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="security-grid"></div>
+        </div>
+
+        {/* Interactive Particles Background */}
+        <div className="absolute inset-0">
+          <canvas id="particles-js" style={{ display: 'block' }}></canvas>
         </div>
 
         {/* Main Content */}
         <div className="relative z-10 flex min-h-screen">
           {/* Left Side - Brand Info */}
           <div className="hidden md:flex md:w-1/2 xl:w-2/5 relative">
-            <div className="corporate-panel flex flex-col justify-center p-10 text-white relative z-20 w-full">
+            <div className="flex flex-col justify-center p-10 text-white relative z-20 w-full">
+              {/* Glass panel overlay */}
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-r-3xl border-r border-white/10"></div>
               <div className="relative z-10">
                 <div className="flex flex-col items-start mb-6">
                   <div className="flex items-center gap-4">
@@ -607,6 +649,9 @@ export default function LoginForm() {
               </div>
             </div>
           </div>
+
+          {/* Línea vertical divisoria */}
+          <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/30 to-transparent z-20"></div>
 
           {/* Right Side - Login Form */}
           <div className="flex-1 flex items-center justify-center p-4">

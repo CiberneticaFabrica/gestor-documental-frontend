@@ -83,6 +83,14 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
   const [kycOpen, setKycOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
 
+  // Variables CSS para colores según el tema
+  const textColorSecondary = theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+
+  useEffect(() => {
+    // Aplicar variables CSS dinámicamente
+    document.documentElement.style.setProperty('--text-color-secondary', textColorSecondary);
+  }, [theme, textColorSecondary]);
+
   // Cierra el sidebar cuando se hace clic fuera de él (para dispositivos móviles)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -145,7 +153,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, minimized, setMinimized }
                     </span>
                     <span style={{
                       fontSize: '0.75rem',
-                      color: 'rgba(5, 1, 1, 0.7)',
+                      color: 'var(--text-color-secondary)',
                       fontWeight: 400,
                       marginTop: 1,
                       marginLeft: 2

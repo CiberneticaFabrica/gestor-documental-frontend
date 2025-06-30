@@ -82,6 +82,10 @@ export default function KycClientsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [sortField, setSortField] = useState<SortField>('nombre');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalClients, setTotalClients] = useState(0);
+  const [pageSize] = useState(50); // Aumentar el tamaño de página para mostrar más clientes
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     riesgo: 'todos',
@@ -90,14 +94,20 @@ export default function KycClientsPage() {
     tipoCliente: 'todos'
   });
 
-  const fetchClients = async (showRefreshLoader = false) => {
+  const fetchClients = async (showRefreshLoader = false, page = 1) => {
     if (showRefreshLoader) setRefreshing(true);
     else setLoading(true);
     
     setError(null);
     try {
-      const data = await workflowService.getKycClients();
+      const data = await workflowService.getKycClients({
+        page: page,
+        limit: pageSize
+      });
       setClients(data.clientes);
+      setTotalClients(data.pagination.total);
+      setTotalPages(data.pagination.total_pages);
+      setCurrentPage(page);
     } catch (err) {
       setError('Error al cargar los clientes KYC. Intente nuevamente.');
     } finally {
@@ -164,7 +174,7 @@ export default function KycClientsPage() {
 
   // Estadísticas
   const stats = useMemo(() => {
-    const total = clients.length;
+    const total = totalClients; // Usar el total real de clientes
     const altoRiesgo = clients.filter(c => c.nivel_riesgo === 'alto').length;
     const altaPrioridad = clients.filter(c => c.prioridad === 'alta').length;
     const completados = clients.filter(c => c.estado_documental === 'completado').length;
@@ -174,7 +184,7 @@ export default function KycClientsPage() {
       : 0;
 
     return { total, altoRiesgo, altaPrioridad, completados, enRevision, promedioCompletitud };
-  }, [clients]);
+  }, [clients, totalClients]);
 
   const handleFilterChange = (key: keyof FilterState, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -197,6 +207,14 @@ export default function KycClientsPage() {
       estado: 'todos', 
       tipoCliente: 'todos'
     });
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchClients(false, page);
+  };
+
+  const handleRefresh = () => {
+    fetchClients(true, currentPage);
   };
 
   const getStatusIcon = (estado: string) => {
@@ -259,7 +277,7 @@ export default function KycClientsPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => fetchClients(true)}
+            onClick={handleRefresh}
             disabled={refreshing}
             className="flex items-center gap-2"
           >
@@ -447,7 +465,7 @@ export default function KycClientsPage() {
             
             {Object.values(filters).some(f => f !== 'todos' && f !== '') && (
               <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
-                Mostrando <span className="font-semibold">{filteredClients.length}</span> de <span className="font-semibold">{clients.length}</span> clientes
+                Mostrando <span className="font-semibold">{filteredClients.length}</span> de <span className="font-semibold">{totalClients}</span> clientes
               </div>
             )}
           </div>
@@ -712,6 +730,70 @@ export default function KycClientsPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Mostrando <span className="font-semibold">{((currentPage - 1) * pageSize) + 1}</span> a{' '}
+                <span className="font-semibold">
+                  {Math.min(currentPage * pageSize, totalClients)}
+                </span> de{' '}
+                <span className="font-semibold">{totalClients}</span> clientes
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                  {totalPages > 5 && (
+                    <>
+                      <span className="text-gray-400">...</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Información adicional */}

@@ -85,12 +85,11 @@ function SearchParamsHandler({ onParamsReady }: { onParamsReady: (params: Reques
   return null;
 }
 
-function InformationRequestPageContent() {
+function InformationRequestPageContent({ params }: { params: RequestParams }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clientInfo, setClientInfo] = useState<Client | null>(null);
-  const [requestParams, setRequestParams] = useState<RequestParams | null>(null);
   const [formData, setFormData] = useState<FormData>({
     nombre_razon_social: '',
     email: '',
@@ -125,20 +124,20 @@ function InformationRequestPageContent() {
     }
   };
 
-  // Manejar parámetros cuando estén listos
-  const handleParamsReady = (params: RequestParams) => {
-    setRequestParams(params);
-    
-    // Validar parámetros requeridos
-    if (!params.client_id || !params.session_id) {
-      setError('Enlace inválido. Faltan parámetros requeridos.');
-      setLoading(false);
-      return;
-    }
+  // Cargar datos del cliente cuando los parámetros estén disponibles
+  useEffect(() => {
+    if (params) {
+      // Validar parámetros requeridos
+      if (!params.client_id || !params.session_id) {
+        setError('Enlace inválido. Faltan parámetros requeridos.');
+        setLoading(false);
+        return;
+      }
 
-    // Cargar información real del cliente
-    loadClientData(params.client_id, params.session_id);
-  };
+      // Cargar información real del cliente
+      loadClientData(params.client_id, params.session_id);
+    }
+  }, [params]);
 
   const loadClientData = async (clientId: string, sessionId: string) => {
     try {
@@ -387,7 +386,7 @@ function InformationRequestPageContent() {
             Actualización de Información
           </h1>
           <p className="text-gray-600">
-            {requestParams?.request_type} - Plazo: {requestParams?.plazo_entrega}
+            {params?.request_type} - Plazo: {params?.plazo_entrega}
           </p>
         </div>
 
@@ -738,6 +737,8 @@ function InformationRequestPageContent() {
 }
 
 export default function InformationRequestPage() {
+  const [params, setParams] = useState<RequestParams | null>(null);
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -749,10 +750,9 @@ export default function InformationRequestPage() {
         </Card>
       </div>
     }>
-      <SearchParamsHandler onParamsReady={(params) => {
-        // Este callback se ejecutará cuando los parámetros estén listos
-      }} />
-      <InformationRequestPageContent />
+      <SearchParamsHandler onParamsReady={setParams} />
+      {params && <InformationRequestPageContent params={params} />}
     </Suspense>
   );
-} 
+}
+

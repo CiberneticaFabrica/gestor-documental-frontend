@@ -66,13 +66,30 @@ const requiredDocuments = [
   { id: 'otros', name: 'Otros documentos', required: false }
 ];
 
-function InformationRequestPageContent() {
+// Componente separado para manejar los parámetros de búsqueda
+function SearchParamsHandler({ onParamsReady }: { onParamsReady: (params: RequestParams) => void }) {
   const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const params: RequestParams = {
+      action: searchParams.get('action') || '',
+      request_type: decodeURIComponent(searchParams.get('request_type') || ''),
+      client_id: searchParams.get('client_id') || '',
+      session_id: searchParams.get('session_id') || '',
+      plazo_entrega: decodeURIComponent(searchParams.get('plazo_entrega') || '')
+    };
+    
+    onParamsReady(params);
+  }, [searchParams, onParamsReady]);
+  
+  return null;
+}
+
+function InformationRequestPageContent({ params }: { params: RequestParams }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clientInfo, setClientInfo] = useState<Client | null>(null);
-  const [requestParams, setRequestParams] = useState<RequestParams | null>(null);
   const [formData, setFormData] = useState<FormData>({
     nombre_razon_social: '',
     email: '',
@@ -107,28 +124,20 @@ function InformationRequestPageContent() {
     }
   };
 
-  // Extraer parámetros de la URL
+  // Cargar datos del cliente cuando los parámetros estén disponibles
   useEffect(() => {
-    const params: RequestParams = {
-      action: searchParams.get('action') || '',
-      request_type: decodeURIComponent(searchParams.get('request_type') || ''),
-      client_id: searchParams.get('client_id') || '',
-      session_id: searchParams.get('session_id') || '',
-      plazo_entrega: decodeURIComponent(searchParams.get('plazo_entrega') || '')
-    };
+    if (params) {
+      // Validar parámetros requeridos
+      if (!params.client_id || !params.session_id) {
+        setError('Enlace inválido. Faltan parámetros requeridos.');
+        setLoading(false);
+        return;
+      }
 
-    setRequestParams(params);
-    
-    // Validar parámetros requeridos
-    if (!params.client_id || !params.session_id) {
-      setError('Enlace inválido. Faltan parámetros requeridos.');
-      setLoading(false);
-      return;
+      // Cargar información real del cliente
+      loadClientData(params.client_id, params.session_id);
     }
-
-    // Cargar información real del cliente
-    loadClientData(params.client_id, params.session_id);
-  }, [searchParams]);
+  }, [params]);
 
   const loadClientData = async (clientId: string, sessionId: string) => {
     try {
@@ -377,7 +386,7 @@ function InformationRequestPageContent() {
             Actualización de Información
           </h1>
           <p className="text-gray-600">
-            {requestParams?.request_type} - Plazo: {requestParams?.plazo_entrega}
+            {params?.request_type} - Plazo: {params?.plazo_entrega}
           </p>
         </div>
 
@@ -728,9 +737,22 @@ function InformationRequestPageContent() {
 }
 
 export default function InformationRequestPage() {
+  const [params, setParams] = useState<RequestParams | null>(null);
+
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      <InformationRequestPageContent />
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <SearchParamsHandler onParamsReady={setParams} />
+      {params && <InformationRequestPageContent params={params} />}
     </Suspense>
   );
+}
 

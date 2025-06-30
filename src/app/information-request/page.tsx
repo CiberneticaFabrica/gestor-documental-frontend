@@ -66,8 +66,26 @@ const requiredDocuments = [
   { id: 'otros', name: 'Otros documentos', required: false }
 ];
 
-function InformationRequestPageContent() {
+// Componente separado para manejar los parámetros de búsqueda
+function SearchParamsHandler({ onParamsReady }: { onParamsReady: (params: RequestParams) => void }) {
   const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const params: RequestParams = {
+      action: searchParams.get('action') || '',
+      request_type: decodeURIComponent(searchParams.get('request_type') || ''),
+      client_id: searchParams.get('client_id') || '',
+      session_id: searchParams.get('session_id') || '',
+      plazo_entrega: decodeURIComponent(searchParams.get('plazo_entrega') || '')
+    };
+    
+    onParamsReady(params);
+  }, [searchParams, onParamsReady]);
+  
+  return null;
+}
+
+function InformationRequestPageContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,16 +125,8 @@ function InformationRequestPageContent() {
     }
   };
 
-  // Extraer parámetros de la URL
-  useEffect(() => {
-    const params: RequestParams = {
-      action: searchParams.get('action') || '',
-      request_type: decodeURIComponent(searchParams.get('request_type') || ''),
-      client_id: searchParams.get('client_id') || '',
-      session_id: searchParams.get('session_id') || '',
-      plazo_entrega: decodeURIComponent(searchParams.get('plazo_entrega') || '')
-    };
-
+  // Manejar parámetros cuando estén listos
+  const handleParamsReady = (params: RequestParams) => {
     setRequestParams(params);
     
     // Validar parámetros requeridos
@@ -128,7 +138,7 @@ function InformationRequestPageContent() {
 
     // Cargar información real del cliente
     loadClientData(params.client_id, params.session_id);
-  }, [searchParams]);
+  };
 
   const loadClientData = async (clientId: string, sessionId: string) => {
     try {
@@ -729,7 +739,19 @@ function InformationRequestPageContent() {
 
 export default function InformationRequestPage() {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <SearchParamsHandler onParamsReady={(params) => {
+        // Este callback se ejecutará cuando los parámetros estén listos
+      }} />
       <InformationRequestPageContent />
     </Suspense>
   );

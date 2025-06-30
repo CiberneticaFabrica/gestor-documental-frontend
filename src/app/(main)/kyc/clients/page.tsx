@@ -146,8 +146,8 @@ export default function KycClientsPage() {
           bValue = priorityOrder[b.prioridad as keyof typeof priorityOrder] || 0;
           break;
         case 'completitud':
-          aValue = Number(a.porcentaje_completitud) || 0;
-          bValue = Number(b.porcentaje_completitud) || 0;
+          aValue = getCompletitudLimitada(a.porcentaje_completitud);
+          bValue = getCompletitudLimitada(b.porcentaje_completitud);
           break;
         default:
           aValue = a.nombre_razon_social.toLowerCase();
@@ -170,7 +170,7 @@ export default function KycClientsPage() {
     const completados = clients.filter(c => c.estado_documental === 'completado').length;
     const enRevision = clients.filter(c => c.estado_documental === 'en_revision').length;
     const promedioCompletitud = clients.length > 0 
-      ? Math.round(clients.reduce((sum, c) => sum + Number(c.porcentaje_completitud), 0) / clients.length)
+      ? Math.round(clients.reduce((sum, c) => sum + Math.min(Number(c.porcentaje_completitud), 100), 0) / clients.length)
       : 0;
 
     return { total, altoRiesgo, altaPrioridad, completados, enRevision, promedioCompletitud };
@@ -222,6 +222,10 @@ export default function KycClientsPage() {
 
   const getPriorityBadgeVariant = (prioridad: string) => {
     return PRIORITY_COLORS[prioridad as keyof typeof PRIORITY_COLORS] || 'default';
+  };
+
+  const getCompletitudLimitada = (completitud: string | number) => {
+    return Math.min(Number(completitud), 100);
   };
 
   if (loading) {
@@ -578,12 +582,12 @@ export default function KycClientsPage() {
                             <div className="flex items-center gap-3">
                               <div className="flex-1">
                                 <Progress 
-                                  value={Number(client.porcentaje_completitud)} 
+                                  value={getCompletitudLimitada(client.porcentaje_completitud)} 
                                   className="h-2"
                                 />
                               </div>
                               <span className="text-sm font-semibold text-gray-700 min-w-[3rem] text-right">
-                                {client.porcentaje_completitud}%
+                                {getCompletitudLimitada(client.porcentaje_completitud)}%
                               </span>
                             </div>
                           </TableCell>
@@ -677,15 +681,15 @@ export default function KycClientsPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-600">Completitud</span>
-                          <span className="text-sm font-bold text-gray-900">{client.porcentaje_completitud}%</span>
+                          <span className="text-sm font-bold text-gray-900">{getCompletitudLimitada(client.porcentaje_completitud)}%</span>
                         </div>
                         <Progress 
-                          value={Number(client.porcentaje_completitud)} 
+                          value={getCompletitudLimitada(client.porcentaje_completitud)} 
                           className="h-3"
                         />
                         <div className="text-xs text-gray-500">
-                          {Number(client.porcentaje_completitud) >= 80 ? '✓ Documentación completa' :
-                           Number(client.porcentaje_completitud) >= 60 ? '⚠ Documentos pendientes' : 
+                          {getCompletitudLimitada(client.porcentaje_completitud) >= 80 ? '✓ Documentación completa' :
+                           getCompletitudLimitada(client.porcentaje_completitud) >= 60 ? '⚠ Documentos pendientes' : 
                            '❌ Documentación incompleta'}
                         </div>
                       </div>

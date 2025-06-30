@@ -118,6 +118,7 @@ export default function ClientReviewPage() {
       case 'activo': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'inactivo': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'pendiente': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'aprobado': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
@@ -139,6 +140,10 @@ export default function ClientReviewPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getCompletitudLimitada = (completitud: string | number) => {
+    return Math.min(Number(completitud), 100);
   };
 
   if (loading) {
@@ -213,7 +218,7 @@ export default function ClientReviewPage() {
                 </div>
               </DialogContent>
             </Dialog>
-          ) : (
+          ) : cliente.estado_flujo !== 'aprobado' ? (
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700">
@@ -247,6 +252,11 @@ export default function ClientReviewPage() {
                 </div>
               </DialogContent>
             </Dialog>
+          ) : (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Cliente Aprobado
+            </Badge>
           )}
         </div>
       </div>
@@ -480,12 +490,12 @@ export default function ClientReviewPage() {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span>Completitud</span>
-                  <span>{cliente.porcentaje_completitud}%</span>
+                  <span>{getCompletitudLimitada(cliente.porcentaje_completitud)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full" 
-                    style={{ width: `${parseFloat(cliente.porcentaje_completitud)}%` }}
+                    style={{ width: `${getCompletitudLimitada(cliente.porcentaje_completitud)}%` }}
                   ></div>
                 </div>
               </div>

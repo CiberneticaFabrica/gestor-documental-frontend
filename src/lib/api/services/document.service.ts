@@ -155,7 +155,7 @@ export const documentService = {
     return {
       id_documento: data.id_documento,
       success: true,
-      message: 'Documento subido correctamente',
+      message: 'Documento cargado correctamente',
       metadata: data.metadata
     };
   },

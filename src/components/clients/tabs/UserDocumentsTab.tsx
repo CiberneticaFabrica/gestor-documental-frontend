@@ -313,7 +313,7 @@ export function UserDocumentsTab() {
     setShowUploadModal(false);
     setPendingUploads(true);
     setPollingCount(0);
-    toast.info("Documento subido, procesando...", {
+    toast.info("Documento cargado, procesando...", {
       duration: Infinity,
       id: "processing-document",
       dismissible: true

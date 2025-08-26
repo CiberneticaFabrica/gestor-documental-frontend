@@ -130,7 +130,7 @@ function LandingPageContent() {
             });
 
             setUploadSuccess(true);
-            toast.success('¡Documento subido exitosamente!', {
+            toast.success('¡Documento cargado exitosamente!', {
                 description: 'Su documento ha sido procesado correctamente.',
             });
         } catch (error) {

@@ -60,8 +60,8 @@ const steps = [
 ];
 
 const requiredDocuments = [
-  { id: 'identificacion', name: 'Documento de identidad', required: true },
-  { id: 'domicilio', name: 'Comprobante de domicilio', required: true },
+  { id: 'identificacion', name: 'Pasaporte', required: true },
+  { id: 'domicilio', name: 'Contrato', required: true },
   { id: 'ingresos', name: 'Comprobante de ingresos', required: false },
   { id: 'otros', name: 'Otros documentos', required: false }
 ];
